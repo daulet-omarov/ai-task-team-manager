@@ -1,0 +1,48 @@
+basePath: /
+definitions:
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: AI Task Team Manager API is a backend service designed to manage team
+    tasks using artificial intelligence. It provides endpoints for task creation,
+    team collaboration, role management, and AI-powered task recommendations to improve
+    productivity and workflow management.
+  title: AI Task Team Manager API
+  version: "1.0"
+paths:
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: create new user account
+      parameters:
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      summary: Register user
+      tags:
+      - Auth
+swagger: "2.0"
