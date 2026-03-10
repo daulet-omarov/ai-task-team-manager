@@ -13,6 +13,17 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+// Register godoc
+// @Summary Register user
+// @Description create new user account
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register request"
+// @Success 201
+// @Failure 400 {string} string "bad request"
+// @Failure 500 {string} string "server error"
+// @Router /auth/register [post]
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req RegisterRequest
