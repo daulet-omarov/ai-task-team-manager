@@ -10,6 +10,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/router"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/validator"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -22,6 +23,8 @@ func New() *App {
 
 	// init logger
 	logger.Init()
+
+	validator.Init()
 
 	cfg := config.Load()
 
