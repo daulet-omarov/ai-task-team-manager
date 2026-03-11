@@ -16,6 +16,11 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) Register(email, password string) error {
 
+	existing, _ := s.repo.GetByEmail(email)
+	if existing != nil {
+		return errors.New("email already exists")
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -24,11 +29,11 @@ func (s *Service) Register(email, password string) error {
 	return s.repo.CreateUser(email, string(hash))
 }
 
-func (s *Service) Login(email, password string) error {
+func (s *Service) Login(email, password string) (string, error) {
 
 	user, err := s.repo.GetByEmail(email)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword(
@@ -37,10 +42,15 @@ func (s *Service) Login(email, password string) error {
 	)
 
 	if err != nil {
-		return errors.New("invalid credentials")
+		return "", errors.New("invalid credentials")
 	}
 
-	return nil
+	token, err := GenerateToken(user.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
 func (s *Service) ForgotPassword(email string) error {

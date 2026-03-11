@@ -9,7 +9,7 @@ func RegisterRoutes(r chi.Router, handler *Handler) {
 		r.Post("/register", handler.Register)
 		r.Post("/login", handler.Login)
 		r.Post("/forgot-password", handler.ForgotPassword)
-		r.Delete("/account", handler.DeleteAccount)
+		r.With(JWTMiddleware).Delete("/account", handler.DeleteAccount)
 
 	})
 }

@@ -1,5 +1,17 @@
 basePath: /
 definitions:
+  auth.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
   auth.RegisterRequest:
     properties:
       email:
@@ -11,17 +23,100 @@ host: localhost:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
-    tasks using artificial intelligence. It provides endpoints for task creation,
-    team collaboration, role management, and AI-powered task recommendations to improve
-    productivity and workflow management.
+    tasks using artificial intelligence.
   title: AI Task Team Manager API
   version: "1.0"
 paths:
+  /auth/account:
+    delete:
+      description: Delete the authenticated user's account
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: account deleted
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete user account
+      tags:
+      - Auth
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Check if email exists and initiate password reset
+      parameters:
+      - description: Forgot password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "404":
+          description: user not found
+          schema:
+            type: string
+      summary: Forgot password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token response
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: invalid credentials
+          schema:
+            type: string
+      summary: Login user
+      tags:
+      - Auth
   /auth/register:
     post:
       consumes:
       - application/json
-      description: create new user account
+      description: Create a new user account
       parameters:
       - description: Register request
         in: body
@@ -33,9 +128,15 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: created
+          schema:
+            type: string
         "400":
           description: bad request
+          schema:
+            type: string
+        "409":
+          description: email already exists
           schema:
             type: string
         "500":
@@ -45,4 +146,10 @@ paths:
       summary: Register user
       tags:
       - Auth
+securityDefinitions:
+  BearerAuth:
+    description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
