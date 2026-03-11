@@ -3,6 +3,7 @@ package auth
 import (
 	"errors"
 
+	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -45,7 +46,7 @@ func (s *Service) Login(email, password string) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
-	token, err := GenerateToken(user.ID)
+	token, err := jwt.GenerateToken(user.ID)
 	if err != nil {
 		return "", err
 	}

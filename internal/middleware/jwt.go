@@ -1,9 +1,12 @@
-package auth
+package middleware
 
 import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
+	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 )
 
 type contextKey string
@@ -17,15 +20,15 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		authHeader := r.Header.Get("Authorization")
 
 		if authHeader == "" {
-			http.Error(w, "missing token", http.StatusUnauthorized)
+			response.Error(w, http.StatusUnauthorized, "missing token")
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		userID, err := ParseToken(tokenString)
+		userID, err := jwt.ParseToken(tokenString)
 		if err != nil {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
+			response.Error(w, http.StatusUnauthorized, "invalid token")
 			return
 		}
 
