@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
 )
 
@@ -32,14 +32,9 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	var req RegisterRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := request.DecodeAndValidate(r, &req)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if req.Email == "" || req.Password == "" {
-		response.Error(w, http.StatusBadRequest, "email and password required")
 		return
 	}
 
@@ -67,7 +62,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req LoginRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := request.DecodeAndValidate(r, &req)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
@@ -99,7 +94,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	var req ForgotPasswordRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := request.DecodeAndValidate(r, &req)
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
