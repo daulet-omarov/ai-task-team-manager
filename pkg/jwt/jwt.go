@@ -1,4 +1,4 @@
-package auth
+package jwt
 
 import (
 	"time"
@@ -6,7 +6,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("super-secret-key")
+var jwtSecret []byte
+
+func Init(secret string) {
+	jwtSecret = []byte(secret)
+}
 
 func GenerateToken(userID int64) (string, error) {
 

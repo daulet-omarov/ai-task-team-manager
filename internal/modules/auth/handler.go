@@ -3,6 +3,9 @@ package auth
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
 )
 
 type Handler struct {
@@ -31,18 +34,18 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if req.Email == "" || req.Password == "" {
-		http.Error(w, "email and password required", http.StatusBadRequest)
+		response.Error(w, http.StatusBadRequest, "email and password required")
 		return
 	}
 
 	err = h.service.Register(req.Email, req.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		response.Error(w, http.StatusConflict, err.Error())
 		return
 	}
 
@@ -66,22 +69,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	token, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
-		http.Error(w, "invalid credentials", 401)
+		response.Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	resp := map[string]string{
+	response.JSON(w, http.StatusOK, map[string]string{
 		"token": token,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	})
 }
 
 // ForgotPassword godoc
@@ -101,13 +101,13 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), 400)
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	err = h.service.ForgotPassword(req.Email)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		response.Error(w, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -126,11 +126,11 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 // @Router /auth/account [delete]
 func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
-	userID := GetUserID(r)
+	userID := middleware.GetUserID(r)
 
 	err := h.service.DeleteAccount(userID)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
