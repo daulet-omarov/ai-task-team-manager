@@ -1,29 +1,24 @@
 package main
 
 import (
-	"log"
-	"net/http"
-
-	"github.com/daulet-omarov/ai-task-team-manager/internal/database"
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
-	"github.com/go-chi/chi/v5"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/app"
 )
 
+// @title AI Task Team Manager API
+// @version 1.0
+// @description AI Task Team Manager API is a backend service designed to manage team tasks using artificial intelligence.
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".
 func main() {
-	db := database.NewPostgres()
 
-	repo := auth.NewRepository(db)
-	service := auth.NewService(repo)
-	handler := auth.NewHandler(service)
+	application := app.New()
 
-	r := chi.NewRouter()
-
-	auth.RegisterRoutes(r, handler)
-
-	log.Println("starting server on port 8080")
-
-	err := http.ListenAndServe(":8080", r)
-	if err != nil {
-		log.Fatal(err)
+	if err := application.Run(); err != nil {
+		panic(err)
 	}
 }

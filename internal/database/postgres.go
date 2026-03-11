@@ -2,23 +2,20 @@ package database
 
 import (
 	"database/sql"
-	"log"
 
 	_ "github.com/lib/pq"
 )
 
-func NewPostgres() *sql.DB {
-	dsn := "postgres://postgres:postgres@10.10.72.55:5432/myapp?sslmode=disable"
+func NewPostgres(dsn string) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
+	if err := db.Ping(); err != nil {
+		return nil, err
 	}
 
-	return db
+	return db, nil
 }
