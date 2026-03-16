@@ -16,6 +16,7 @@ func SetupRouter(authHandler *auth.Handler) *chi.Mux {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
+		r.Get("/verify-email", authHandler.VerifyEmail)
 		r.Post("/forgot-password", authHandler.ForgotPassword)
 		r.With(middleware.JWTMiddleware).Delete("/account", authHandler.DeleteAccount)
 	})

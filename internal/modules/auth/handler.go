@@ -131,3 +131,26 @@ func (h *Handler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// VerifyEmail godoc
+// @Summary Verify email address
+// @Description Verify user email using the token sent to their inbox
+// @Tags Auth
+// @Param token query string true "Verification token"
+// @Success 200 {string} string "email verified"
+// @Failure 400 {string} string "invalid or expired token"
+// @Router /auth/verify-email [get]
+func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		response.Error(w, http.StatusBadRequest, "missing token")
+		return
+	}
+
+	if err := h.service.VerifyEmail(token); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, "email verified successfully")
+}
