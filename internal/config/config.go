@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	AppPort string
+	AppUrl  string
 
 	DBHost     string
 	DBPort     string
@@ -17,6 +18,13 @@ type Config struct {
 	DBName     string
 
 	JWTSecret string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+	AppBaseURL   string
 }
 
 func Load() *Config {
@@ -28,6 +36,7 @@ func Load() *Config {
 
 	cfg := &Config{
 		AppPort: getEnv("APP_PORT", "8080"),
+		AppUrl:  getEnv("APP_URL", "localhost:8080"),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -36,6 +45,13 @@ func Load() *Config {
 		DBName:     getEnv("DB_NAME", "myapp"),
 
 		JWTSecret: getEnv("JWT_SECRET", "secret"),
+
+		SMTPHost:     getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
+		AppBaseURL:   getEnv("APP_BASE_URL", "http://localhost:7777"),
 	}
 
 	return cfg

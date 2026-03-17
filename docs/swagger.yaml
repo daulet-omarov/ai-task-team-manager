@@ -4,6 +4,8 @@ definitions:
     properties:
       email:
         type: string
+    required:
+    - email
     type: object
   auth.LoginRequest:
     properties:
@@ -11,15 +13,33 @@ definitions:
         type: string
       password:
         type: string
+    required:
+    - email
+    - password
     type: object
   auth.RegisterRequest:
     properties:
       email:
         type: string
       password:
+        minLength: 6
         type: string
+    required:
+    - email
+    - password
     type: object
-host: localhost:8080
+  auth.ResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+host: localhost:7777
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -54,7 +74,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Check if email exists and initiate password reset
+      description: Send password reset email
       parameters:
       - description: Forgot password request
         in: body
@@ -71,10 +91,6 @@ paths:
             type: string
         "400":
           description: bad request
-          schema:
-            type: string
-        "404":
-          description: user not found
           schema:
             type: string
       summary: Forgot password
@@ -144,6 +160,53 @@ paths:
           schema:
             type: string
       summary: Register user
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset user password using token from email
+      parameters:
+      - description: Reset password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: password reset successfully
+          schema:
+            type: string
+        "400":
+          description: invalid or expired token
+          schema:
+            type: string
+      summary: Reset password
+      tags:
+      - Auth
+  /auth/verify-email:
+    get:
+      description: Verify user email using the token sent to their inbox
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses:
+        "200":
+          description: email verified
+          schema:
+            type: string
+        "400":
+          description: invalid or expired token
+          schema:
+            type: string
+      summary: Verify email address
       tags:
       - Auth
 securityDefinitions:
