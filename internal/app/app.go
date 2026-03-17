@@ -12,6 +12,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/router"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/validator"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
+	"github.com/daulet-omarov/ai-task-team-manager/pkg/mailer"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -42,9 +43,12 @@ func New() *App {
 	// singleton DB
 	db, _ := database.NewPostgres(dsn)
 
+	// mailer
+	m := mailer.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPFrom)
+
 	// modules
 	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo)
+	authService := auth.NewService(authRepo, m, cfg.AppBaseURL) // updated
 	authHandler := auth.NewHandler(authService)
 
 	// router
@@ -53,7 +57,7 @@ func New() *App {
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    cfg.AppUrl,
 		Handler: r,
 	}
 
