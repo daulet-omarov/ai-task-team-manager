@@ -18,6 +18,7 @@ func SetupRouter(authHandler *auth.Handler) *chi.Mux {
 		r.Post("/login", authHandler.Login)
 		r.Get("/verify-email", authHandler.VerifyEmail)
 		r.Post("/forgot-password", authHandler.ForgotPassword)
+		r.Post("/reset-password", authHandler.ResetPassword) // ← новый
 		r.With(middleware.JWTMiddleware).Delete("/account", authHandler.DeleteAccount)
 	})
 

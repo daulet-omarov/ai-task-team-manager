@@ -91,11 +91,54 @@ func (s *Service) Login(email, password string) (string, error) {
 	return jwt.GenerateToken(user.ID)
 }
 
-func (s *Service) ForgotPassword(email string) error {
-	_, err := s.repo.GetByEmail(email)
-	return err
-}
-
 func (s *Service) DeleteAccount(userID int64) error {
 	return s.repo.DeleteUser(userID)
+}
+
+func (s *Service) ForgotPassword(email string) error {
+	user, err := s.repo.GetByEmail(email)
+	if err != nil {
+		// Намеренно не говорим что email не найден — защита от перебора
+		return nil
+	}
+
+	// Генерируем токен
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return err
+	}
+	token := hex.EncodeToString(tokenBytes)
+	expiresAt := time.Now().Add(15 * time.Minute) // короткий TTL для безопасности
+
+	if err := s.repo.CreatePasswordResetToken(user.ID, token, expiresAt); err != nil {
+		return err
+	}
+
+	resetURL := s.appBaseURL + "/auth/reset-password?token=" + token
+	go s.mailer.SendPasswordResetEmail(user.Email, resetURL)
+
+	return nil
+}
+
+func (s *Service) ResetPassword(token, newPassword string) error {
+	rt, err := s.repo.GetPasswordResetToken(token)
+	if err != nil {
+		return errors.New("invalid or expired token")
+	}
+
+	if time.Now().After(rt.ExpiresAt) {
+		_ = s.repo.DeletePasswordResetToken(token)
+		return errors.New("token has expired")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.UpdatePassword(rt.UserID, string(hash)); err != nil {
+		return err
+	}
+
+	return s.repo.DeletePasswordResetToken(token)
 }

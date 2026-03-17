@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
@@ -70,6 +71,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
+		logger.Log.Error(err.Error())
 		response.Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -77,36 +79,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{
 		"token": token,
 	})
-}
-
-// ForgotPassword godoc
-// @Summary Forgot password
-// @Description Check if email exists and initiate password reset
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body ForgotPasswordRequest true "Forgot password request"
-// @Success 200 {string} string "ok"
-// @Failure 400 {string} string "bad request"
-// @Failure 404 {string} string "user not found"
-// @Router /auth/forgot-password [post]
-func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
-
-	var req ForgotPasswordRequest
-
-	err := request.DecodeAndValidate(r, &req)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	err = h.service.ForgotPassword(req.Email)
-	if err != nil {
-		response.Error(w, http.StatusNotFound, err.Error())
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 // DeleteAccount godoc
@@ -153,4 +125,54 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, "email verified successfully")
+}
+
+// ForgotPassword godoc
+// @Summary Forgot password
+// @Description Send password reset email
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body ForgotPasswordRequest true "Forgot password request"
+// @Success 200 {string} string "ok"
+// @Failure 400 {string} string "bad request"
+// @Router /auth/forgot-password [post]
+func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req ForgotPasswordRequest
+
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Всегда возвращаем 200 — не раскрываем существование email
+	h.service.ForgotPassword(req.Email)
+
+	response.JSON(w, http.StatusOK, "if this email exists, you will receive a reset link")
+}
+
+// ResetPassword godoc
+// @Summary Reset password
+// @Description Reset user password using token from email
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body ResetPasswordRequest true "Reset password request"
+// @Success 200 {string} string "password reset successfully"
+// @Failure 400 {string} string "invalid or expired token"
+// @Router /auth/reset-password [post]
+func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req ResetPasswordRequest
+
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := h.service.ResetPassword(req.Token, req.NewPassword); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, "password reset successfully")
 }
