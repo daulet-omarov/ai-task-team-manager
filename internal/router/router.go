@@ -10,7 +10,9 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 )
 
-func SetupRouter(authHandler *auth.Handler) *chi.Mux {
+func SetupRouter(
+	authHandler *auth.Handler,
+) *chi.Mux {
 
 	r := chi.NewRouter()
 
@@ -34,14 +36,7 @@ func SetupRouter(authHandler *auth.Handler) *chi.Mux {
 
 	r.Use(middleware.LoggerMiddleware)
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", authHandler.Register)
-		r.Post("/login", authHandler.Login)
-		r.Get("/verify-email", authHandler.VerifyEmail)
-		r.Post("/forgot-password", authHandler.ForgotPassword)
-		r.Post("/reset-password", authHandler.ResetPassword)
-		r.With(middleware.JWTMiddleware).Delete("/account", authHandler.DeleteAccount)
-	})
+	auth.RegisterRoutes(r, authHandler)
 
 	return r
 }

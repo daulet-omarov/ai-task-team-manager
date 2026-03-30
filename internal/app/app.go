@@ -25,10 +25,13 @@ func New() *App {
 	// init logger
 	logger.Init()
 
+	// init validator
 	validator.Init()
 
+	// load configs
 	cfg := config.Load()
 
+	//init JWT
 	jwt.Init(cfg.JWTSecret)
 
 	dsn := fmt.Sprintf(
@@ -47,9 +50,7 @@ func New() *App {
 	m := mailer.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPFrom)
 
 	// modules
-	authRepo := auth.NewRepository(db)
-	authService := auth.NewService(authRepo, m, cfg.AppBaseURL) // updated
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewModule(db, m, cfg.AppBaseURL)
 
 	// router
 	r := router.SetupRouter(authHandler)
