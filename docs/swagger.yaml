@@ -39,7 +39,7 @@ definitions:
     - new_password
     - token
     type: object
-host: localhost:7777
+host: 192.168.100.22:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
