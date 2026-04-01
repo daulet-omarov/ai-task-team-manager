@@ -7,7 +7,7 @@ import (
 // @title AI Task Team Manager API
 // @version 1.0
 // @description AI Task Team Manager API is a backend service designed to manage team tasks using artificial intelligence.
-// @host 192.168.100.22:8080
+// @host localhost:8080
 // @BasePath /
 
 // @securityDefinitions.apikey BearerAuth

@@ -5,7 +5,7 @@ definitions:
       email:
         type: string
     required:
-    - email
+      - email
     type: object
   auth.LoginRequest:
     properties:
@@ -14,8 +14,8 @@ definitions:
       password:
         type: string
     required:
-    - email
-    - password
+      - email
+      - password
     type: object
   auth.RegisterRequest:
     properties:
@@ -25,8 +25,8 @@ definitions:
         minLength: 6
         type: string
     required:
-    - email
-    - password
+      - email
+      - password
     type: object
   auth.ResetPasswordRequest:
     properties:
@@ -36,12 +36,12 @@ definitions:
       token:
         type: string
     required:
-    - new_password
-    - token
+      - new_password
+      - token
     type: object
-host: 192.168.100.22:8080
+host: localhost:8080
 info:
-  contact: {}
+  contact: { }
   description: AI Task Team Manager API is a backend service designed to manage team
     tasks using artificial intelligence.
   title: AI Task Team Manager API
@@ -51,7 +51,7 @@ paths:
     delete:
       description: Delete the authenticated user's account
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: account deleted
@@ -66,24 +66,24 @@ paths:
           schema:
             type: string
       security:
-      - BearerAuth: []
+        - BearerAuth: [ ]
       summary: Delete user account
       tags:
-      - Auth
+        - Auth
   /auth/forgot-password:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Send password reset email
       parameters:
-      - description: Forgot password request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/auth.ForgotPasswordRequest'
+        - description: Forgot password request
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: '#/definitions/auth.ForgotPasswordRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: ok
@@ -95,21 +95,21 @@ paths:
             type: string
       summary: Forgot password
       tags:
-      - Auth
+        - Auth
   /auth/login:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Authenticate user and return JWT token
       parameters:
-      - description: Login request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/auth.LoginRequest'
+        - description: Login request
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: '#/definitions/auth.LoginRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: token response
@@ -127,21 +127,21 @@ paths:
             type: string
       summary: Login user
       tags:
-      - Auth
+        - Auth
   /auth/register:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Create a new user account
       parameters:
-      - description: Register request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/auth.RegisterRequest'
+        - description: Register request
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: '#/definitions/auth.RegisterRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "201":
           description: created
@@ -161,21 +161,21 @@ paths:
             type: string
       summary: Register user
       tags:
-      - Auth
+        - Auth
   /auth/reset-password:
     post:
       consumes:
-      - application/json
+        - application/json
       description: Reset user password using token from email
       parameters:
-      - description: Reset password request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/auth.ResetPasswordRequest'
+        - description: Reset password request
+          in: body
+          name: request
+          required: true
+          schema:
+            $ref: '#/definitions/auth.ResetPasswordRequest'
       produces:
-      - application/json
+        - application/json
       responses:
         "200":
           description: password reset successfully
@@ -187,16 +187,16 @@ paths:
             type: string
       summary: Reset password
       tags:
-      - Auth
+        - Auth
   /auth/verify-email:
     get:
       description: Verify user email using the token sent to their inbox
       parameters:
-      - description: Verification token
-        in: query
-        name: token
-        required: true
-        type: string
+        - description: Verification token
+          in: query
+          name: token
+          required: true
+          type: string
       responses:
         "200":
           description: email verified
@@ -208,7 +208,7 @@ paths:
             type: string
       summary: Verify email address
       tags:
-      - Auth
+        - Auth
 securityDefinitions:
   BearerAuth:
     description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".

@@ -1,7 +1,9 @@
-CREATE TABLE users (
-                       id SERIAL PRIMARY KEY,
-                       email TEXT NOT NULL UNIQUE,
-                       password TEXT NOT NULL,
-                       is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-                       created_at TIMESTAMP DEFAULT now()
+CREATE TABLE users
+(
+    id          SERIAL PRIMARY KEY,
+    email       TEXT    NOT NULL UNIQUE,
+    password    TEXT    NOT NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP        DEFAULT now(),
+    updated_at  TIMESTAMP        DEFAULT now()
 );

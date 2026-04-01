@@ -1,331 +1,331 @@
 {
-    "swagger": "2.0",
-    "info": {
-        "description": "AI Task Team Manager API is a backend service designed to manage team tasks using artificial intelligence.",
-        "title": "AI Task Team Manager API",
-        "contact": {},
-        "version": "1.0"
-    },
-    "host": "192.168.100.22:8080",
-    "basePath": "/",
-    "paths": {
-        "/auth/account": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete the authenticated user's account",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Delete user account",
-                "responses": {
-                    "200": {
-                        "description": "account deleted",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "unauthorized",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
+  "swagger": "2.0",
+  "info": {
+    "description": "AI Task Team Manager API is a backend service designed to manage team tasks using artificial intelligence.",
+    "title": "AI Task Team Manager API",
+    "contact": {},
+    "version": "1.0"
+  },
+  "host": "localhost:8080",
+  "basePath": "/",
+  "paths": {
+    "/auth/account": {
+      "delete": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Delete the authenticated user's account",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Delete user account",
+        "responses": {
+          "200": {
+            "description": "account deleted",
+            "schema": {
+              "type": "string"
             }
-        },
-        "/auth/forgot-password": {
-            "post": {
-                "description": "Send password reset email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Forgot password",
-                "parameters": [
-                    {
-                        "description": "Forgot password request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.ForgotPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
+          },
+          "401": {
+            "description": "unauthorized",
+            "schema": {
+              "type": "string"
             }
-        },
-        "/auth/login": {
-            "post": {
-                "description": "Authenticate user and return JWT token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Login user",
-                "parameters": [
-                    {
-                        "description": "Login request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "token response",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "invalid credentials",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
+          },
+          "500": {
+            "description": "server error",
+            "schema": {
+              "type": "string"
             }
-        },
-        "/auth/register": {
-            "post": {
-                "description": "Create a new user account",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Register user",
-                "parameters": [
-                    {
-                        "description": "Register request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.RegisterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "created",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "409": {
-                        "description": "email already exists",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/reset-password": {
-            "post": {
-                "description": "Reset user password using token from email",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Reset password",
-                "parameters": [
-                    {
-                        "description": "Reset password request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.ResetPasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "password reset successfully",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid or expired token",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/verify-email": {
-            "get": {
-                "description": "Verify user email using the token sent to their inbox",
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Verify email address",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Verification token",
-                        "name": "token",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "email verified",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid or expired token",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
+          }
         }
+      }
     },
-    "definitions": {
-        "auth.ForgotPasswordRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
+    "/auth/forgot-password": {
+      "post": {
+        "description": "Send password reset email",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Forgot password",
+        "parameters": [
+          {
+            "description": "Forgot password request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/auth.ForgotPasswordRequest"
             }
-        },
-        "auth.LoginRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "schema": {
+              "type": "string"
             }
-        },
-        "auth.RegisterRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 6
-                }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "type": "string"
             }
-        },
-        "auth.ResetPasswordRequest": {
-            "type": "object",
-            "required": [
-                "new_password",
-                "token"
-            ],
-            "properties": {
-                "new_password": {
-                    "type": "string",
-                    "minLength": 6
-                },
-                "token": {
-                    "type": "string"
-                }
-            }
+          }
         }
+      }
     },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Enter the token with the `Bearer ` prefix, e.g. \"Bearer abcde12345\".",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
+    "/auth/login": {
+      "post": {
+        "description": "Authenticate user and return JWT token",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login user",
+        "parameters": [
+          {
+            "description": "Login request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/auth.LoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "token response",
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "401": {
+            "description": "invalid credentials",
+            "schema": {
+              "type": "string"
+            }
+          }
         }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "description": "Create a new user account",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register user",
+        "parameters": [
+          {
+            "description": "Register request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/auth.RegisterRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "created",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "409": {
+            "description": "email already exists",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "500": {
+            "description": "server error",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "description": "Reset user password using token from email",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password",
+        "parameters": [
+          {
+            "description": "Reset password request",
+            "name": "request",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/auth.ResetPasswordRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "password reset successfully",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "400": {
+            "description": "invalid or expired token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-email": {
+      "get": {
+        "description": "Verify user email using the token sent to their inbox",
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify email address",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "Verification token",
+            "name": "token",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "email verified",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "400": {
+            "description": "invalid or expired token",
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
+  },
+  "definitions": {
+    "auth.ForgotPasswordRequest": {
+      "type": "object",
+      "required": [
+        "email"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "auth.LoginRequest": {
+      "type": "object",
+      "required": [
+        "email",
+        "password"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "auth.RegisterRequest": {
+      "type": "object",
+      "required": [
+        "email",
+        "password"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 6
+        }
+      }
+    },
+    "auth.ResetPasswordRequest": {
+      "type": "object",
+      "required": [
+        "new_password",
+        "token"
+      ],
+      "properties": {
+        "new_password": {
+          "type": "string",
+          "minLength": 6
+        },
+        "token": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "BearerAuth": {
+      "description": "Enter the token with the `Bearer ` prefix, e.g. \"Bearer abcde12345\".",
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  }
 }

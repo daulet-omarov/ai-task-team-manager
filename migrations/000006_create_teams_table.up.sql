@@ -1,5 +1,6 @@
-CREATE TABLE teams (
-                 id SERIAL PRIMARY KEY,
-                 name TEXT,
-                 code TEXT UNIQUE
+CREATE TABLE teams
+(
+    id   SERIAL PRIMARY KEY,
+    name TEXT,
+    code TEXT UNIQUE
 );

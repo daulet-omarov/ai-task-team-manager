@@ -2,6 +2,7 @@ package auth
 
 import (
 	"database/sql"
+
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/mailer"
 )
 
