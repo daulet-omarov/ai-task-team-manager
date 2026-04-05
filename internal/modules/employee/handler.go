@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
 	"github.com/go-chi/chi/v5"
@@ -38,7 +39,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Create(req); err != nil {
+	userID := uint(middleware.GetUserID(r))
+
+	if err := h.service.Create(userID, req); err != nil {
 		logger.Log.Error(err.Error())
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return

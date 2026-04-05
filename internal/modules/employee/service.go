@@ -13,14 +13,14 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Create(req CreateEmployeeRequest) error {
+func (s *Service) Create(userID uint, req CreateEmployeeRequest) error {
 	birthday, err := time.Parse("2006-01-02", req.Birthday)
 	if err != nil {
 		return errors.New("invalid birthday format, use YYYY-MM-DD")
 	}
 
 	e := &Employee{
-		UserID:      req.UserID,
+		UserID:      userID,
 		FullName:    req.FullName,
 		Photo:       req.Photo,
 		Email:       req.Email,
