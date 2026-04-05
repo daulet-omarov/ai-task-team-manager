@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
+	"strconv"
 	"time"
 
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
@@ -12,13 +14,14 @@ import (
 )
 
 type Service struct {
-	repo       *Repository
-	mailer     *mailer.Mailer
-	appBaseURL string
+	repo         *Repository
+	employeeRepo *employee.Repository
+	mailer       *mailer.Mailer
+	appBaseURL   string
 }
 
-func NewService(repo *Repository, mailer *mailer.Mailer, appBaseURL string) *Service {
-	return &Service{repo: repo, mailer: mailer, appBaseURL: appBaseURL}
+func NewService(repo *Repository, employeeRepo *employee.Repository, mailer *mailer.Mailer, appBaseURL string) *Service {
+	return &Service{repo: repo, employeeRepo: employeeRepo, mailer: mailer, appBaseURL: appBaseURL}
 }
 
 func (s *Service) Register(email, password string) error {
@@ -74,21 +77,42 @@ func (s *Service) VerifyEmail(token string) error {
 	return s.repo.DeleteVerificationToken(token)
 }
 
-func (s *Service) Login(email, password string) (string, error) {
+func (s *Service) Login(email, password string) (map[string]any, error) {
 	user, err := s.repo.GetByEmail(email)
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return map[string]any{}, errors.New("invalid credentials")
 	}
 
 	if !user.IsVerified {
-		return "", errors.New("email not verified, please check your inbox")
+		return map[string]any{}, errors.New("email not verified, please check your inbox")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", errors.New("invalid credentials")
+		return map[string]any{}, errors.New("invalid credentials")
 	}
 
-	return jwt.GenerateToken(user.ID)
+	token, err := jwt.GenerateToken(user.ID)
+	if err != nil {
+		return map[string]any{}, errors.New("invalid credentials")
+	}
+
+	employeeModel, err := s.employeeRepo.GetByUserID(uint(user.ID))
+	if err != nil {
+		//user exists but has no employee profile yet
+		return map[string]any{
+			"token":     token,
+			"user_id":   strconv.FormatInt(user.ID, 10),
+			"full_name": nil,
+			"email":     user.Email,
+		}, nil
+	}
+
+	return map[string]any{
+		"token":     token,
+		"user_id":   strconv.FormatInt(user.ID, 10),
+		"full_name": employeeModel.FullName,
+		"email":     user.Email,
+	}, nil
 }
 
 func (s *Service) DeleteAccount(userID int64) error {

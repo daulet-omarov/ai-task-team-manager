@@ -69,16 +69,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Login(req.Email, req.Password)
+	res, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
 		logger.Log.Error(err.Error())
 		response.Error(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	response.JSON(w, http.StatusOK, map[string]string{
-		"token": token,
-	})
+	response.JSON(w, http.StatusOK, res)
 }
 
 // DeleteAccount godoc

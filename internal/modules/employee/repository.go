@@ -1,6 +1,8 @@
 package employee
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type Repository struct {
 	db *gorm.DB
@@ -19,7 +21,6 @@ func (r *Repository) GetByID(id uint) (*Employee, error) {
 	err := r.db.
 		Preload("Team").
 		Preload("Gender").
-		Preload("User").
 		First(&e, id).Error
 	if err != nil {
 		return nil, err
@@ -32,7 +33,6 @@ func (r *Repository) GetByUserID(userID uint) (*Employee, error) {
 	err := r.db.
 		Preload("Team").
 		Preload("Gender").
-		Preload("User").
 		Where("user_id = ?", userID).
 		First(&e).Error
 	if err != nil {
@@ -46,7 +46,6 @@ func (r *Repository) GetAll() ([]*Employee, error) {
 	err := r.db.
 		Preload("Team").
 		Preload("Gender").
-		Preload("User").
 		Find(&employees).Error
 	return employees, err
 }

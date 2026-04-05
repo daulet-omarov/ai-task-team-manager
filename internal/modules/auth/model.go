@@ -1,6 +1,9 @@
 package auth
 
-import "time"
+import (
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
+	"time"
+)
 
 type User struct {
 	ID         int64
@@ -8,6 +11,7 @@ type User struct {
 	Password   string
 	IsVerified bool
 	CreatedAt  time.Time
+	Employee   *employee.Employee
 }
 
 type EmailVerificationToken struct {

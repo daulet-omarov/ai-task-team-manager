@@ -1,7 +1,6 @@
 package employee
 
 import (
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"time"
 )
 
@@ -18,7 +17,6 @@ type Employee struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Team        Team
-	User        auth.User
 	Gender      Gender
 }
 
