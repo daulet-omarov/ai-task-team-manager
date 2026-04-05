@@ -1,4 +1,4 @@
-CREATE TABLE task_attachments
+CREATE TABLE attachments
 (
     id         SERIAL PRIMARY KEY,
     task_id    INTEGER REFERENCES tasks (id),

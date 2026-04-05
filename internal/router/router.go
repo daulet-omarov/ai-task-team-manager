@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	_ "net/http"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
@@ -12,6 +13,7 @@ import (
 
 func SetupRouter(
 	authHandler *auth.Handler,
+	employeeHandler *employee.Handler,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
@@ -37,6 +39,7 @@ func SetupRouter(
 	r.Use(middleware.LoggerMiddleware)
 
 	auth.RegisterRoutes(r, authHandler)
+	employee.RegisterRoutes(r, employeeHandler)
 
 	return r
 }

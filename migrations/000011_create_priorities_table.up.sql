@@ -1,4 +1,4 @@
-CREATE TABLE task_priorities
+CREATE TABLE priorities
 (
     id   SERIAL PRIMARY KEY,
     name TEXT,

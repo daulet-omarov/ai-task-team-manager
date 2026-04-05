@@ -6,7 +6,7 @@ import (
 
 func (s *Seeder) SeedTaskDifficulties() {
 	_, err := s.db.Exec(`
-        INSERT INTO task_difficulties (id, name, code)
+        INSERT INTO difficulties (id, name, code)
         VALUES 
             (1, 'Легкий', 'easy'),
             (2, 'Средний', 'medium'),

@@ -6,7 +6,7 @@ import (
 
 func (s *Seeder) SeedTaskPriorities() {
 	_, err := s.db.Exec(`
-        INSERT INTO task_priorities (id, name, code)
+        INSERT INTO priorities (id, name, code)
         VALUES 
             (1, 'Низкий', 'low'),
             (2, 'Средний', 'medium'),

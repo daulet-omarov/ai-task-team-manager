@@ -5,7 +5,7 @@ definitions:
       email:
         type: string
     required:
-      - email
+    - email
     type: object
   auth.LoginRequest:
     properties:
@@ -14,8 +14,8 @@ definitions:
       password:
         type: string
     required:
-      - email
-      - password
+    - email
+    - password
     type: object
   auth.RegisterRequest:
     properties:
@@ -25,8 +25,8 @@ definitions:
         minLength: 6
         type: string
     required:
-      - email
-      - password
+    - email
+    - password
     type: object
   auth.ResetPasswordRequest:
     properties:
@@ -36,12 +36,96 @@ definitions:
       token:
         type: string
     required:
-      - new_password
-      - token
+    - new_password
+    - token
     type: object
-host: localhost:8080
+  employee.CreateEmployeeRequest:
+    properties:
+      birthday:
+        description: 'format: 2006-01-02'
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      gender_id:
+        type: integer
+      phone_number:
+        type: string
+      photo:
+        type: string
+      role_id:
+        type: integer
+      user_id:
+        type: integer
+    required:
+    - birthday
+    - email
+    - full_name
+    - gender_id
+    - role_id
+    - user_id
+    type: object
+  employee.EmployeeResponse:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      gender:
+        $ref: '#/definitions/employee.Gender'
+      id:
+        type: integer
+      phone_number:
+        type: string
+      photo:
+        type: string
+      role:
+        $ref: '#/definitions/employee.Role'
+      user_id:
+        type: integer
+    type: object
+  employee.Gender:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  employee.Role:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  employee.UpdateEmployeeRequest:
+    properties:
+      birthday:
+        description: 'format: 2006-01-02'
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      gender_id:
+        type: integer
+      phone_number:
+        type: string
+      photo:
+        type: string
+      role_id:
+        type: integer
+    type: object
+host: 192.168.100.22:8080
 info:
-  contact: { }
+  contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
     tasks using artificial intelligence.
   title: AI Task Team Manager API
@@ -51,7 +135,7 @@ paths:
     delete:
       description: Delete the authenticated user's account
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: account deleted
@@ -66,24 +150,24 @@ paths:
           schema:
             type: string
       security:
-        - BearerAuth: [ ]
+      - BearerAuth: []
       summary: Delete user account
       tags:
-        - Auth
+      - Auth
   /auth/forgot-password:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Send password reset email
       parameters:
-        - description: Forgot password request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: '#/definitions/auth.ForgotPasswordRequest'
+      - description: Forgot password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: ok
@@ -95,21 +179,21 @@ paths:
             type: string
       summary: Forgot password
       tags:
-        - Auth
+      - Auth
   /auth/login:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Authenticate user and return JWT token
       parameters:
-        - description: Login request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: '#/definitions/auth.LoginRequest'
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: token response
@@ -127,21 +211,21 @@ paths:
             type: string
       summary: Login user
       tags:
-        - Auth
+      - Auth
   /auth/register:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Create a new user account
       parameters:
-        - description: Register request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: '#/definitions/auth.RegisterRequest'
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "201":
           description: created
@@ -161,21 +245,21 @@ paths:
             type: string
       summary: Register user
       tags:
-        - Auth
+      - Auth
   /auth/reset-password:
     post:
       consumes:
-        - application/json
+      - application/json
       description: Reset user password using token from email
       parameters:
-        - description: Reset password request
-          in: body
-          name: request
-          required: true
-          schema:
-            $ref: '#/definitions/auth.ResetPasswordRequest'
+      - description: Reset password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordRequest'
       produces:
-        - application/json
+      - application/json
       responses:
         "200":
           description: password reset successfully
@@ -187,16 +271,16 @@ paths:
             type: string
       summary: Reset password
       tags:
-        - Auth
+      - Auth
   /auth/verify-email:
     get:
       description: Verify user email using the token sent to their inbox
       parameters:
-        - description: Verification token
-          in: query
-          name: token
-          required: true
-          type: string
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
       responses:
         "200":
           description: email verified
@@ -208,7 +292,154 @@ paths:
             type: string
       summary: Verify email address
       tags:
-        - Auth
+      - Auth
+  /employees:
+    get:
+      description: Get list of all employees
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/employee.EmployeeResponse'
+            type: array
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get all employees
+      tags:
+      - Employee
+    post:
+      consumes:
+      - application/json
+      description: Create a new employee
+      parameters:
+      - description: Create employee request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/employee.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create employee
+      tags:
+      - Employee
+  /employees/{id}:
+    delete:
+      description: Delete an employee by ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - Employee
+    get:
+      description: Get a single employee by their ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/employee.EmployeeResponse'
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - Employee
+    put:
+      consumes:
+      - application/json
+      description: Update an existing employee by ID
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update employee request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/employee.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - Employee
 securityDefinitions:
   BearerAuth:
     description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".

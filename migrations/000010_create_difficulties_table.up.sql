@@ -1,4 +1,4 @@
-CREATE TABLE task_difficulties
+CREATE TABLE difficulties
 (
     id   SERIAL PRIMARY KEY,
     name TEXT,

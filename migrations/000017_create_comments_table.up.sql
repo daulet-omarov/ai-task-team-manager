@@ -1,4 +1,4 @@
-CREATE TABLE task_comments
+CREATE TABLE comments
 (
     id         SERIAL PRIMARY KEY,
     content    TEXT,

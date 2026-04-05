@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"net/http"
 
 	_ "github.com/daulet-omarov/ai-task-team-manager/docs"
@@ -51,9 +52,10 @@ func New() *App {
 
 	// modules
 	authHandler := auth.NewModule(db, m, cfg.AppBaseURL)
+	employeeHandler := employee.NewModule(db)
 
 	// router
-	r := router.SetupRouter(authHandler)
+	r := router.SetupRouter(authHandler, employeeHandler)
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 

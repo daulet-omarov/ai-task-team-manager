@@ -1,7 +1,41 @@
 package employee
 
-type Gender struct {
-	ID   int64
+import (
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
+	"time"
+)
+
+type Employee struct {
+	ID          uint `gorm:"primaryKey"`
+	UserID      uint
+	FullName    string `gorm:"not null"`
+	Photo       string
+	Email       string `gorm:"uniqueIndex;not null"`
+	RoleID      uint
+	Birthday    time.Time `gorm:"not null"`
+	PhoneNumber string
+	GenderID    uint
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Role        Role
+	User        auth.User
+	Gender      Gender
+}
+
+type Role struct {
+	ID   uint `gorm:"primaryKey"`
 	Name string
-	Code string
+	Code string `gorm:"unique"`
+}
+
+type Gender struct {
+	ID   uint `gorm:"primaryKey"`
+	Name string
+	Code string `gorm:"unique"`
+}
+
+type Team struct {
+	ID   uint `gorm:"primaryKey"`
+	Name string
+	Code string `gorm:"unique"`
 }

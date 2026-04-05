@@ -21,7 +21,7 @@ func main() {
 	)
 
 	// singleton DB
-	db, _ := database.NewPostgres(dsn)
+	db, _ := database.NewPostgresForSeeder(dsn)
 
 	s := seeder.New(db)
 	s.Run()
