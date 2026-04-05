@@ -10,8 +10,8 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Use(middleware.JWTMiddleware)
 		r.Post("/", h.Create)
 		r.Get("/", h.GetAll)
-		r.Get("/{id}", h.GetByID)
-		r.Put("/{id}", h.Update)
-		r.Delete("/{id}", h.Delete)
+		r.Get("/me", h.GetByUserID)
+		r.Put("/", h.Update)
+		r.Delete("/", h.Delete)
 	})
 }

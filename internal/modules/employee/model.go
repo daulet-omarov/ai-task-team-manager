@@ -11,13 +11,13 @@ type Employee struct {
 	FullName    string `gorm:"not null"`
 	Photo       string
 	Email       string `gorm:"uniqueIndex;not null"`
-	RoleID      uint
+	TeamID      uint
 	Birthday    time.Time `gorm:"not null"`
 	PhoneNumber string
 	GenderID    uint
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	Role        Role
+	Team        Team
 	User        auth.User
 	Gender      Gender
 }

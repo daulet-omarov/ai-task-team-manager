@@ -54,17 +54,14 @@ definitions:
         type: string
       photo:
         type: string
-      role_id:
-        type: integer
-      user_id:
+      team_id:
         type: integer
     required:
     - birthday
     - email
     - full_name
     - gender_id
-    - role_id
-    - user_id
+    - team_id
     type: object
   employee.EmployeeResponse:
     properties:
@@ -82,8 +79,8 @@ definitions:
         type: string
       photo:
         type: string
-      role:
-        $ref: '#/definitions/employee.Role'
+      team:
+        $ref: '#/definitions/employee.Team'
       user_id:
         type: integer
     type: object
@@ -96,7 +93,7 @@ definitions:
       name:
         type: string
     type: object
-  employee.Role:
+  employee.Team:
     properties:
       code:
         type: string
@@ -120,7 +117,7 @@ definitions:
         type: string
       photo:
         type: string
-      role_id:
+      team_id:
         type: integer
     type: object
 host: 192.168.100.22:8080
@@ -294,6 +291,26 @@ paths:
       tags:
       - Auth
   /employees:
+    delete:
+      description: Delete an employee
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - Employee
     get:
       description: Get list of all employees
       produces:
@@ -345,71 +362,11 @@ paths:
       summary: Create employee
       tags:
       - Employee
-  /employees/{id}:
-    delete:
-      description: Delete an employee by ID
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: deleted
-          schema:
-            type: string
-        "400":
-          description: invalid id
-          schema:
-            type: string
-        "500":
-          description: server error
-          schema:
-            type: string
-      security:
-      - BearerAuth: []
-      summary: Delete employee
-      tags:
-      - Employee
-    get:
-      description: Get a single employee by their ID
-      parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/employee.EmployeeResponse'
-        "400":
-          description: invalid id
-          schema:
-            type: string
-        "404":
-          description: not found
-          schema:
-            type: string
-      security:
-      - BearerAuth: []
-      summary: Get employee by ID
-      tags:
-      - Employee
     put:
       consumes:
       - application/json
-      description: Update an existing employee by ID
+      description: Update an employee
       parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: integer
       - description: Update employee request
         in: body
         name: request
@@ -438,6 +395,29 @@ paths:
       security:
       - BearerAuth: []
       summary: Update employee
+      tags:
+      - Employee
+  /employees/me:
+    get:
+      description: Get employee
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/employee.EmployeeResponse'
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get employee
       tags:
       - Employee
 securityDefinitions:

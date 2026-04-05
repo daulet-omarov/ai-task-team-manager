@@ -24,7 +24,7 @@ func (s *Service) Create(userID uint, req CreateEmployeeRequest) error {
 		FullName:    req.FullName,
 		Photo:       req.Photo,
 		Email:       req.Email,
-		RoleID:      req.RoleID,
+		TeamID:      req.TeamID,
 		Birthday:    birthday,
 		PhoneNumber: req.PhoneNumber,
 		GenderID:    req.GenderID,
@@ -35,6 +35,14 @@ func (s *Service) Create(userID uint, req CreateEmployeeRequest) error {
 
 func (s *Service) GetByID(id uint) (*EmployeeResponse, error) {
 	e, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, errors.New("employee not found")
+	}
+	return toResponse(e), nil
+}
+
+func (s *Service) GetByUserID(userID uint) (*EmployeeResponse, error) {
+	e, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		return nil, errors.New("employee not found")
 	}
@@ -54,8 +62,8 @@ func (s *Service) GetAll() ([]*EmployeeResponse, error) {
 	return result, nil
 }
 
-func (s *Service) Update(id uint, req UpdateEmployeeRequest) error {
-	e, err := s.repo.GetByID(id)
+func (s *Service) Update(userID uint, req UpdateEmployeeRequest) error {
+	e, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		return errors.New("employee not found")
 	}
@@ -69,8 +77,8 @@ func (s *Service) Update(id uint, req UpdateEmployeeRequest) error {
 	if req.Email != "" {
 		e.Email = req.Email
 	}
-	if req.RoleID != 0 {
-		e.RoleID = req.RoleID
+	if req.TeamID != 0 {
+		e.TeamID = req.TeamID
 	}
 	if req.GenderID != 0 {
 		e.GenderID = req.GenderID
@@ -89,8 +97,8 @@ func (s *Service) Update(id uint, req UpdateEmployeeRequest) error {
 	return s.repo.Update(e)
 }
 
-func (s *Service) Delete(id uint) error {
-	return s.repo.Delete(id)
+func (s *Service) Delete(userID uint) error {
+	return s.repo.Delete(userID)
 }
 
 // --- helper ---
@@ -104,7 +112,7 @@ func toResponse(e *Employee) *EmployeeResponse {
 		Email:       e.Email,
 		PhoneNumber: e.PhoneNumber,
 		Birthday:    e.Birthday.Format("2006-01-02"),
-		Role:        e.Role,
+		Team:        e.Team,
 		Gender:      e.Gender,
 	}
 }

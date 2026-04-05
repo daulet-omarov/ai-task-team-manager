@@ -4,7 +4,7 @@ type CreateEmployeeRequest struct {
 	FullName    string `json:"full_name" validate:"required"`
 	Photo       string `json:"photo"`
 	Email       string `json:"email" validate:"required,email"`
-	RoleID      uint   `json:"role_id" validate:"required"`
+	TeamID      uint   `json:"team_id" validate:"required"`
 	Birthday    string `json:"birthday" validate:"required"` // format: 2006-01-02
 	PhoneNumber string `json:"phone_number"`
 	GenderID    uint   `json:"gender_id" validate:"required"`
@@ -14,7 +14,7 @@ type UpdateEmployeeRequest struct {
 	FullName    string `json:"full_name"`
 	Photo       string `json:"photo"`
 	Email       string `json:"email" validate:"omitempty,email"`
-	RoleID      uint   `json:"role_id"`
+	TeamID      uint   `json:"team_id"`
 	Birthday    string `json:"birthday"` // format: 2006-01-02
 	PhoneNumber string `json:"phone_number"`
 	GenderID    uint   `json:"gender_id"`
@@ -28,6 +28,6 @@ type EmployeeResponse struct {
 	Email       string `json:"email"`
 	PhoneNumber string `json:"phone_number"`
 	Birthday    string `json:"birthday"`
-	Role        Role   `json:"role"`
+	Team        Team   `json:"team"`
 	Gender      Gender `json:"gender"`
 }

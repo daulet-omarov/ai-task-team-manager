@@ -298,6 +298,61 @@ const docTemplate = `{
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update an employee",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Update employee",
+                "parameters": [
+                    {
+                        "description": "Update employee request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/employee.UpdateEmployeeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -346,114 +401,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/employees/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get a single employee by their ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Employee"
-                ],
-                "summary": "Get employee by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/employee.EmployeeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid id",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing employee by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Employee"
-                ],
-                "summary": "Update employee",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update employee request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/employee.UpdateEmployeeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "updated",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
             },
             "delete": {
                 "security": [
@@ -461,20 +408,11 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an employee by ID",
+                "description": "Delete an employee",
                 "tags": [
                     "Employee"
                 ],
                 "summary": "Delete employee",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "deleted",
@@ -490,6 +428,43 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/me": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get employee",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/employee.EmployeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
                         "schema": {
                             "type": "string"
                         }
@@ -564,8 +539,7 @@ const docTemplate = `{
                 "email",
                 "full_name",
                 "gender_id",
-                "role_id",
-                "user_id"
+                "team_id"
             ],
             "properties": {
                 "birthday": {
@@ -587,10 +561,7 @@ const docTemplate = `{
                 "photo": {
                     "type": "string"
                 },
-                "role_id": {
-                    "type": "integer"
-                },
-                "user_id": {
+                "team_id": {
                     "type": "integer"
                 }
             }
@@ -619,8 +590,8 @@ const docTemplate = `{
                 "photo": {
                     "type": "string"
                 },
-                "role": {
-                    "$ref": "#/definitions/employee.Role"
+                "team": {
+                    "$ref": "#/definitions/employee.Team"
                 },
                 "user_id": {
                     "type": "integer"
@@ -641,7 +612,7 @@ const docTemplate = `{
                 }
             }
         },
-        "employee.Role": {
+        "employee.Team": {
             "type": "object",
             "properties": {
                 "code": {
@@ -677,7 +648,7 @@ const docTemplate = `{
                 "photo": {
                     "type": "string"
                 },
-                "role_id": {
+                "team_id": {
                     "type": "integer"
                 }
             }

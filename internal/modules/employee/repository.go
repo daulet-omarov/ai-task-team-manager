@@ -17,7 +17,7 @@ func (r *Repository) Create(e *Employee) error {
 func (r *Repository) GetByID(id uint) (*Employee, error) {
 	var e Employee
 	err := r.db.
-		Preload("Role").
+		Preload("Team").
 		Preload("Gender").
 		Preload("User").
 		First(&e, id).Error
@@ -27,10 +27,24 @@ func (r *Repository) GetByID(id uint) (*Employee, error) {
 	return &e, nil
 }
 
+func (r *Repository) GetByUserID(userID uint) (*Employee, error) {
+	var e Employee
+	err := r.db.
+		Preload("Team").
+		Preload("Gender").
+		Preload("User").
+		Where("user_id = ?", userID).
+		First(&e).Error
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
 func (r *Repository) GetAll() ([]*Employee, error) {
 	var employees []*Employee
 	err := r.db.
-		Preload("Role").
+		Preload("Team").
 		Preload("Gender").
 		Preload("User").
 		Find(&employees).Error
@@ -41,6 +55,6 @@ func (r *Repository) Update(e *Employee) error {
 	return r.db.Save(e).Error
 }
 
-func (r *Repository) Delete(id uint) error {
-	return r.db.Delete(&Employee{}, id).Error
+func (r *Repository) Delete(userID uint) error {
+	return r.db.Where("user_id = ?", userID).Delete(&Employee{}).Error
 }

@@ -51,24 +51,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetEmployee godoc
-// @Summary Get employee by ID
-// @Description Get a single employee by their ID
+// @Summary Get employee
+// @Description Get employee
 // @Tags Employee
 // @Security BearerAuth
 // @Produce json
-// @Param id path int true "Employee ID"
 // @Success 200 {object} EmployeeResponse
 // @Failure 400 {string} string "invalid id"
 // @Failure 404 {string} string "not found"
-// @Router /employees/{id} [get]
-func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid id")
-		return
-	}
+// @Router /employees/me [get]
+func (h *Handler) GetByUserID(w http.ResponseWriter, r *http.Request) {
+	userID := uint(middleware.GetUserID(r))
 
-	emp, err := h.service.GetByID(id)
+	emp, err := h.service.GetByUserID(userID)
 	if err != nil {
 		response.Error(w, http.StatusNotFound, err.Error())
 		return
@@ -99,32 +94,27 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 // UpdateEmployee godoc
 // @Summary Update employee
-// @Description Update an existing employee by ID
+// @Description Update an employee
 // @Tags Employee
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param id path int true "Employee ID"
 // @Param request body UpdateEmployeeRequest true "Update employee request"
 // @Success 200 {string} string "updated"
 // @Failure 400 {string} string "bad request"
 // @Failure 404 {string} string "not found"
 // @Failure 500 {string} string "server error"
-// @Router /employees/{id} [put]
+// @Router /employees [put]
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid id")
-		return
-	}
-
 	var req UpdateEmployeeRequest
 	if err := request.DecodeAndValidate(r, &req); err != nil {
 		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if err := h.service.Update(id, req); err != nil {
+	userID := uint(middleware.GetUserID(r))
+
+	if err := h.service.Update(userID, req); err != nil {
 		logger.Log.Error(err.Error())
 		if err.Error() == "employee not found" {
 			response.Error(w, http.StatusNotFound, err.Error())
@@ -139,22 +129,17 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 // DeleteEmployee godoc
 // @Summary Delete employee
-// @Description Delete an employee by ID
+// @Description Delete an employee
 // @Tags Employee
 // @Security BearerAuth
-// @Param id path int true "Employee ID"
 // @Success 200 {string} string "deleted"
 // @Failure 400 {string} string "invalid id"
 // @Failure 500 {string} string "server error"
-// @Router /employees/{id} [delete]
+// @Router /employees [delete]
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r)
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "invalid id")
-		return
-	}
+	userID := uint(middleware.GetUserID(r))
 
-	if err := h.service.Delete(id); err != nil {
+	if err := h.service.Delete(userID); err != nil {
 		logger.Log.Error(err.Error())
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
