@@ -13,5 +13,6 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Get("/me", h.GetByUserID)
 		r.Put("/", h.Update)
 		r.Delete("/", h.Delete)
+		r.Get("/exists", h.Exists)
 	})
 }

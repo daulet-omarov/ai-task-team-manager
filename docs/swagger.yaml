@@ -120,7 +120,7 @@ definitions:
       team_id:
         type: integer
     type: object
-host: 192.168.100.22:8080
+host: localhost:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -395,6 +395,31 @@ paths:
       security:
       - BearerAuth: []
       summary: Update employee
+      tags:
+      - Employee
+  /employees/exists:
+    get:
+      description: Exists employee
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'e.g. {\"exists\": true}'
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Exists employee
       tags:
       - Employee
   /employees/me:

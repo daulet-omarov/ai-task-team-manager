@@ -101,6 +101,14 @@ func (s *Service) Delete(userID uint) error {
 	return s.repo.Delete(userID)
 }
 
+func (s *Service) Exists(userID uint) (bool, error) {
+	_, err := s.repo.GetByUserID(userID)
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
 // --- helper ---
 
 func toResponse(e *Employee) *EmployeeResponse {

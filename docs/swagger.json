@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "192.168.100.22:8080",
+    "host": "localhost:8080",
     "basePath": "/",
     "paths": {
         "/auth/account": {
@@ -422,6 +422,46 @@
                     },
                     "500": {
                         "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/exists": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exists employee",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Exists employee",
+                "responses": {
+                    "200": {
+                        "description": "e.g. {\\\"exists\\\": true}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
                         "schema": {
                             "type": "string"
                         }

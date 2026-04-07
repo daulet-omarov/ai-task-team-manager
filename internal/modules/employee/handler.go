@@ -148,6 +148,31 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ExistsEmployee godoc
+// @Summary Exists employee
+// @Description Exists employee
+// @Tags Employee
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} map[string]bool "e.g. {\"exists\": true}"
+// @Failure 400 {string} string "invalid id"
+// @Failure 404 {string} string "not found"
+// @Router /employees/exists [get]
+func (h *Handler) Exists(w http.ResponseWriter, r *http.Request) {
+	userID := uint(middleware.GetUserID(r))
+
+	res, err := h.service.Exists(userID)
+	if err != nil {
+		logger.Log.Error(err.Error())
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, map[string]bool{
+		"exists": res,
+	})
+}
+
 // --- helper ---
 
 func parseID(r *http.Request) (uint, error) {
