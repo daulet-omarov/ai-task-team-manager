@@ -3,6 +3,8 @@ package employee
 import (
 	"errors"
 	"time"
+
+	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 )
 
 type Service struct {
@@ -19,7 +21,7 @@ func (s *Service) Create(userID uint, req CreateEmployeeRequest) error {
 		return errors.New("invalid birthday format, use YYYY-MM-DD")
 	}
 
-	e := &Employee{
+	e := &models.Employee{
 		UserID:      userID,
 		FullName:    req.FullName,
 		Photo:       req.Photo,
@@ -111,7 +113,7 @@ func (s *Service) Exists(userID uint) (bool, error) {
 
 // --- helper ---
 
-func toResponse(e *Employee) *EmployeeResponse {
+func toResponse(e *models.Employee) *EmployeeResponse {
 	return &EmployeeResponse{
 		ID:          e.ID,
 		UserID:      e.UserID,

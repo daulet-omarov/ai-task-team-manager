@@ -1,5 +1,7 @@
 package employee
 
+import "github.com/daulet-omarov/ai-task-team-manager/internal/models"
+
 type CreateEmployeeRequest struct {
 	FullName    string `json:"full_name" validate:"required"`
 	Photo       string `json:"photo"`
@@ -21,13 +23,13 @@ type UpdateEmployeeRequest struct {
 }
 
 type EmployeeResponse struct {
-	ID          uint   `json:"id"`
-	UserID      uint   `json:"user_id"`
-	FullName    string `json:"full_name"`
-	Photo       string `json:"photo"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
-	Birthday    string `json:"birthday"`
-	Team        Team   `json:"team"`
-	Gender      Gender `json:"gender"`
+	ID          uint          `json:"id"`
+	UserID      uint          `json:"user_id"`
+	FullName    string        `json:"full_name"`
+	Photo       string        `json:"photo"`
+	Email       string        `json:"email"`
+	PhoneNumber string        `json:"phone_number"`
+	Birthday    string        `json:"birthday"`
+	Team        models.Team   `json:"team"`
+	Gender      models.Gender `json:"gender"`
 }

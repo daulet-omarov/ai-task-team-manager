@@ -1,19 +1,26 @@
 package router
 
 import (
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
-	_ "net/http"
+	"net/http"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/upload"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 )
 
 func SetupRouter(
 	authHandler *auth.Handler,
 	employeeHandler *employee.Handler,
+	boardHandler *board.Handler,
+	taskHandler *task.Handler,
+	inviteHandler *invite.Handler,
+	uploadHandler *upload.Handler,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
@@ -23,7 +30,7 @@ func SetupRouter(
 			"http://192.168.100.23:5173",
 		},
 		AllowedMethods: []string{
-			"GET", "POST", "PUT", "DELETE", "OPTIONS",
+			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
 		},
 		AllowedHeaders: []string{
 			"Accept",
@@ -40,6 +47,14 @@ func SetupRouter(
 
 	auth.RegisterRoutes(r, authHandler)
 	employee.RegisterRoutes(r, employeeHandler)
+	board.RegisterRoutes(r, boardHandler)
+	task.RegisterRoutes(r, taskHandler)
+	invite.RegisterRoutes(r, inviteHandler)
+	upload.RegisterRoutes(r, uploadHandler)
+
+	// Serve uploaded files as static assets: GET /uploads/<filename>
+	fileServer := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads", fileServer))
 
 	return r
 }

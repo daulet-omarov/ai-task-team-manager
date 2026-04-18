@@ -265,6 +265,244 @@ const docTemplate = `{
                 }
             }
         },
+        "/boards": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new board; the caller becomes the owner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Create board",
+                "parameters": [
+                    {
+                        "description": "Create board request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/board.CreateBoardRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/board.BoardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Board owner invites a user to the board",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invite"
+                ],
+                "summary": "Send invitation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Invite request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/invite.CreateInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "invitation sent",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "only the board owner can send invitations",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "already a member / invitation already pending",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/tasks": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a task inside a board; caller must be a board member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Add task to board",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create task request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.CreateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/task.TaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get board by ID (user must be a member)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Get board",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/board.BoardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "board not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns user's boards and isFirstLogin flag",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Dashboard",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/board.DashboardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/employees": {
             "get": {
                 "security": [
@@ -272,7 +510,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get list of all employees",
                 "produces": [
                     "application/json"
                 ],
@@ -304,9 +541,9 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update an employee",
+                "description": "Accepts multipart/form-data. Send only the fields you want to change.",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -314,16 +551,49 @@ const docTemplate = `{
                 "tags": [
                     "Employee"
                 ],
-                "summary": "Update employee",
+                "summary": "Update employee profile",
                 "parameters": [
                     {
-                        "description": "Update employee request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/employee.UpdateEmployeeRequest"
-                        }
+                        "type": "file",
+                        "description": "New profile photo",
+                        "name": "photo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Full name",
+                        "name": "full_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email",
+                        "name": "email",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Team ID",
+                        "name": "team_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Gender ID",
+                        "name": "gender_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Birthday (YYYY-MM-DD)",
+                        "name": "birthday",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Phone number",
+                        "name": "phone_number",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -359,9 +629,9 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new employee",
+                "description": "Create a new employee profile. Accepts multipart/form-data so photo can be uploaded in the same request.",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -372,13 +642,51 @@ const docTemplate = `{
                 "summary": "Create employee",
                 "parameters": [
                     {
-                        "description": "Create employee request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/employee.CreateEmployeeRequest"
-                        }
+                        "type": "file",
+                        "description": "Profile photo (jpeg/png/gif/webp, max 5 MB)",
+                        "name": "photo",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Full name",
+                        "name": "full_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email",
+                        "name": "email",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Team ID",
+                        "name": "team_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Gender ID",
+                        "name": "gender_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Birthday (YYYY-MM-DD)",
+                        "name": "birthday",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Phone number",
+                        "name": "phone_number",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -408,7 +716,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an employee",
                 "tags": [
                     "Employee"
                 ],
@@ -416,12 +723,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "deleted",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "invalid id",
                         "schema": {
                             "type": "string"
                         }
@@ -442,34 +743,21 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Exists employee",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Employee"
                 ],
-                "summary": "Exists employee",
+                "summary": "Check if employee profile exists",
                 "responses": {
                     "200": {
-                        "description": "e.g. {\\\"exists\\\": true}",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "boolean"
                             }
-                        }
-                    },
-                    "400": {
-                        "description": "invalid id",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "404": {
-                        "description": "not found",
-                        "schema": {
-                            "type": "string"
                         }
                     }
                 }
@@ -482,14 +770,13 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get employee",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Employee"
                 ],
-                "summary": "Get employee",
+                "summary": "Get my employee profile",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -497,14 +784,282 @@ const docTemplate = `{
                             "$ref": "#/definitions/employee.EmployeeResponse"
                         }
                     },
-                    "400": {
-                        "description": "invalid id",
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/invites": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all pending invitations for the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invite"
+                ],
+                "summary": "List my invitations",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/invite.InviteResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/invites/{inviteId}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accept a pending board invitation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invite"
+                ],
+                "summary": "Accept invitation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Invite ID",
+                        "name": "inviteId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "accepted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "404": {
-                        "description": "not found",
+                        "description": "invitation not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/invites/{inviteId}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reject a pending board invitation",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invite"
+                ],
+                "summary": "Reject invitation",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Invite ID",
+                        "name": "inviteId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rejected",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "invitation not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{taskId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get task by ID; caller must be a board member",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/task.TaskResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Partially update a task; caller must be a board member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Update task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update task request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.UpdateTaskRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/task.TaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/upload/photo": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a profile photo (max 5 MB, jpeg/png/gif/webp). Returns a URL to use in employee fields.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Upload"
+                ],
+                "summary": "Upload photo",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Photo file",
+                        "name": "photo",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "url",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
                         "schema": {
                             "type": "string"
                         }
@@ -572,37 +1127,57 @@ const docTemplate = `{
                 }
             }
         },
-        "employee.CreateEmployeeRequest": {
+        "board.BoardResponse": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isOwner": {
+                    "type": "boolean"
+                },
+                "memberCount": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "ownerId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "board.CreateBoardRequest": {
             "type": "object",
             "required": [
-                "birthday",
-                "email",
-                "full_name",
-                "gender_id",
-                "team_id"
+                "name"
             ],
             "properties": {
-                "birthday": {
-                    "description": "format: 2006-01-02",
-                    "type": "string"
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
                 },
-                "email": {
-                    "type": "string"
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
+        "board.DashboardResponse": {
+            "type": "object",
+            "properties": {
+                "boards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/board.BoardResponse"
+                    }
                 },
-                "full_name": {
-                    "type": "string"
-                },
-                "gender_id": {
-                    "type": "integer"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "photo": {
-                    "type": "string"
-                },
-                "team_id": {
-                    "type": "integer"
+                "isFirstLogin": {
+                    "type": "boolean"
                 }
             }
         },
@@ -619,7 +1194,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "gender": {
-                    "$ref": "#/definitions/employee.Gender"
+                    "$ref": "#/definitions/models.Gender"
                 },
                 "id": {
                     "type": "integer"
@@ -631,14 +1206,51 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "team": {
-                    "$ref": "#/definitions/employee.Team"
+                    "$ref": "#/definitions/models.Team"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "employee.Gender": {
+        "invite.CreateInviteRequest": {
+            "type": "object",
+            "required": [
+                "user_id"
+            ],
+            "properties": {
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "invite.InviteResponse": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "type": "integer"
+                },
+                "board_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "invitee_id": {
+                    "type": "integer"
+                },
+                "inviter_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Gender": {
             "type": "object",
             "properties": {
                 "code": {
@@ -652,7 +1264,7 @@ const docTemplate = `{
                 }
             }
         },
-        "employee.Team": {
+        "models.Team": {
             "type": "object",
             "properties": {
                 "code": {
@@ -666,30 +1278,88 @@ const docTemplate = `{
                 }
             }
         },
-        "employee.UpdateEmployeeRequest": {
+        "task.CreateTaskRequest": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "assignee_id": {
+                    "description": "employee ID",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "priority_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                }
+            }
+        },
+        "task.TaskResponse": {
             "type": "object",
             "properties": {
-                "birthday": {
-                    "description": "format: 2006-01-02",
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "gender_id": {
+                "assignee_id": {
                     "type": "integer"
                 },
-                "phone_number": {
-                    "type": "string"
-                },
-                "photo": {
-                    "type": "string"
-                },
-                "team_id": {
+                "board_id": {
                     "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "priority_id": {
+                    "type": "integer"
+                },
+                "reporter_id": {
+                    "type": "integer"
+                },
+                "status_id": {
+                    "type": "integer"
+                },
+                "time_spent": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "task.UpdateTaskRequest": {
+            "type": "object",
+            "properties": {
+                "assignee_id": {
+                    "description": "employee ID",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "priority_id": {
+                    "type": "integer"
+                },
+                "status_id": {
+                    "type": "integer"
+                },
+                "time_spent": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         }
@@ -707,7 +1377,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "192.168.100.32:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "AI Task Team Manager API",

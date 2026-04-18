@@ -39,29 +39,41 @@ definitions:
     - new_password
     - token
     type: object
-  employee.CreateEmployeeRequest:
+  board.BoardResponse:
     properties:
-      birthday:
-        description: 'format: 2006-01-02'
+      description:
         type: string
-      email:
-        type: string
-      full_name:
-        type: string
-      gender_id:
+      id:
         type: integer
-      phone_number:
-        type: string
-      photo:
-        type: string
-      team_id:
+      isOwner:
+        type: boolean
+      memberCount:
         type: integer
+      name:
+        type: string
+      ownerId:
+        type: integer
+    type: object
+  board.CreateBoardRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
     required:
-    - birthday
-    - email
-    - full_name
-    - gender_id
-    - team_id
+    - name
+    type: object
+  board.DashboardResponse:
+    properties:
+      boards:
+        items:
+          $ref: '#/definitions/board.BoardResponse'
+        type: array
+      isFirstLogin:
+        type: boolean
     type: object
   employee.EmployeeResponse:
     properties:
@@ -72,7 +84,7 @@ definitions:
       full_name:
         type: string
       gender:
-        $ref: '#/definitions/employee.Gender'
+        $ref: '#/definitions/models.Gender'
       id:
         type: integer
       phone_number:
@@ -80,11 +92,35 @@ definitions:
       photo:
         type: string
       team:
-        $ref: '#/definitions/employee.Team'
+        $ref: '#/definitions/models.Team'
       user_id:
         type: integer
     type: object
-  employee.Gender:
+  invite.CreateInviteRequest:
+    properties:
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  invite.InviteResponse:
+    properties:
+      board_id:
+        type: integer
+      board_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      invitee_id:
+        type: integer
+      inviter_id:
+        type: integer
+      status:
+        type: string
+    type: object
+  models.Gender:
     properties:
       code:
         type: string
@@ -93,7 +129,7 @@ definitions:
       name:
         type: string
     type: object
-  employee.Team:
+  models.Team:
     properties:
       code:
         type: string
@@ -102,25 +138,64 @@ definitions:
       name:
         type: string
     type: object
-  employee.UpdateEmployeeRequest:
+  task.CreateTaskRequest:
     properties:
-      birthday:
-        description: 'format: 2006-01-02'
-        type: string
-      email:
-        type: string
-      full_name:
-        type: string
-      gender_id:
+      assignee_id:
+        description: employee ID
         type: integer
-      phone_number:
+      description:
         type: string
-      photo:
-        type: string
-      team_id:
+      priority_id:
         type: integer
+      title:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - title
     type: object
-host: localhost:8080
+  task.TaskResponse:
+    properties:
+      assignee_id:
+        type: integer
+      board_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      priority_id:
+        type: integer
+      reporter_id:
+        type: integer
+      status_id:
+        type: integer
+      time_spent:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  task.UpdateTaskRequest:
+    properties:
+      assignee_id:
+        description: employee ID
+        type: integer
+      description:
+        type: string
+      priority_id:
+        type: integer
+      status_id:
+        type: integer
+      time_spent:
+        type: integer
+      title:
+        type: string
+    type: object
+host: 192.168.100.32:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -290,16 +365,161 @@ paths:
       summary: Verify email address
       tags:
       - Auth
-  /employees:
-    delete:
-      description: Delete an employee
+  /boards:
+    post:
+      consumes:
+      - application/json
+      description: Create a new board; the caller becomes the owner
+      parameters:
+      - description: Create board request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.CreateBoardRequest'
+      produces:
+      - application/json
       responses:
-        "200":
-          description: deleted
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/board.BoardResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create board
+      tags:
+      - Board
+  /boards/{boardId}/invite:
+    post:
+      consumes:
+      - application/json
+      description: Board owner invites a user to the board
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Invite request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/invite.CreateInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: invitation sent
           schema:
             type: string
         "400":
-          description: invalid id
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: only the board owner can send invitations
+          schema:
+            type: string
+        "409":
+          description: already a member / invitation already pending
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Send invitation
+      tags:
+      - Invite
+  /boards/{boardId}/tasks:
+    post:
+      consumes:
+      - application/json
+      description: Create a task inside a board; caller must be a board member
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Create task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Add task to board
+      tags:
+      - Task
+  /boards/{id}:
+    get:
+      description: Get board by ID (user must be a member)
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/board.BoardResponse'
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: board not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board
+      tags:
+      - Board
+  /dashboard:
+    get:
+      description: Returns user's boards and isFirstLogin flag
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/board.DashboardResponse'
+      security:
+      - BearerAuth: []
+      summary: Dashboard
+      tags:
+      - Board
+  /employees:
+    delete:
+      responses:
+        "200":
+          description: deleted
           schema:
             type: string
         "500":
@@ -312,7 +532,6 @@ paths:
       tags:
       - Employee
     get:
-      description: Get list of all employees
       produces:
       - application/json
       responses:
@@ -333,15 +552,43 @@ paths:
       - Employee
     post:
       consumes:
-      - application/json
-      description: Create a new employee
+      - multipart/form-data
+      description: Create a new employee profile. Accepts multipart/form-data so photo
+        can be uploaded in the same request.
       parameters:
-      - description: Create employee request
-        in: body
-        name: request
+      - description: Profile photo (jpeg/png/gif/webp, max 5 MB)
+        in: formData
+        name: photo
+        type: file
+      - description: Full name
+        in: formData
+        name: full_name
         required: true
-        schema:
-          $ref: '#/definitions/employee.CreateEmployeeRequest'
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Team ID
+        in: formData
+        name: team_id
+        required: true
+        type: integer
+      - description: Gender ID
+        in: formData
+        name: gender_id
+        required: true
+        type: integer
+      - description: Birthday (YYYY-MM-DD)
+        in: formData
+        name: birthday
+        required: true
+        type: string
+      - description: Phone number
+        in: formData
+        name: phone_number
+        type: string
       produces:
       - application/json
       responses:
@@ -364,15 +611,37 @@ paths:
       - Employee
     put:
       consumes:
-      - application/json
-      description: Update an employee
+      - multipart/form-data
+      description: Accepts multipart/form-data. Send only the fields you want to change.
       parameters:
-      - description: Update employee request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/employee.UpdateEmployeeRequest'
+      - description: New profile photo
+        in: formData
+        name: photo
+        type: file
+      - description: Full name
+        in: formData
+        name: full_name
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        type: string
+      - description: Team ID
+        in: formData
+        name: team_id
+        type: integer
+      - description: Gender ID
+        in: formData
+        name: gender_id
+        type: integer
+      - description: Birthday (YYYY-MM-DD)
+        in: formData
+        name: birthday
+        type: string
+      - description: Phone number
+        in: formData
+        name: phone_number
+        type: string
       produces:
       - application/json
       responses:
@@ -394,37 +663,27 @@ paths:
             type: string
       security:
       - BearerAuth: []
-      summary: Update employee
+      summary: Update employee profile
       tags:
       - Employee
   /employees/exists:
     get:
-      description: Exists employee
       produces:
       - application/json
       responses:
         "200":
-          description: 'e.g. {\"exists\": true}'
+          description: OK
           schema:
             additionalProperties:
               type: boolean
             type: object
-        "400":
-          description: invalid id
-          schema:
-            type: string
-        "404":
-          description: not found
-          schema:
-            type: string
       security:
       - BearerAuth: []
-      summary: Exists employee
+      summary: Check if employee profile exists
       tags:
       - Employee
   /employees/me:
     get:
-      description: Get employee
       produces:
       - application/json
       responses:
@@ -432,19 +691,189 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/employee.EmployeeResponse'
-        "400":
-          description: invalid id
-          schema:
-            type: string
         "404":
           description: not found
           schema:
             type: string
       security:
       - BearerAuth: []
-      summary: Get employee
+      summary: Get my employee profile
       tags:
       - Employee
+  /invites:
+    get:
+      description: Returns all pending invitations for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/invite.InviteResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List my invitations
+      tags:
+      - Invite
+  /invites/{inviteId}/accept:
+    post:
+      description: Accept a pending board invitation
+      parameters:
+      - description: Invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: accepted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: invitation not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Accept invitation
+      tags:
+      - Invite
+  /invites/{inviteId}/reject:
+    post:
+      description: Reject a pending board invitation
+      parameters:
+      - description: Invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: rejected
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: invitation not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Reject invitation
+      tags:
+      - Invite
+  /tasks/{taskId}:
+    get:
+      description: Get task by ID; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get task
+      tags:
+      - Task
+    patch:
+      consumes:
+      - application/json
+      description: Partially update a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      - description: Update task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update task
+      tags:
+      - Task
+  /upload/photo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a profile photo (max 5 MB, jpeg/png/gif/webp). Returns a
+        URL to use in employee fields.
+      parameters:
+      - description: Photo file
+        in: formData
+        name: photo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: bad request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Upload photo
+      tags:
+      - Upload
 securityDefinitions:
   BearerAuth:
     description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".

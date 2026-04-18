@@ -1,8 +1,6 @@
-package employee
+package models
 
-import (
-	"time"
-)
+import "time"
 
 type Employee struct {
 	ID          uint `gorm:"primaryKey"`

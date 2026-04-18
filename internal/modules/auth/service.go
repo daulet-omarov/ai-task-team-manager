@@ -4,23 +4,28 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"strconv"
 	"time"
 
+	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/mailer"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// employeeRepository is a local interface to avoid a hard dependency on the employee package.
+type employeeRepository interface {
+	GetByUserID(userID uint) (*models.Employee, error)
+}
+
 type Service struct {
 	repo         *Repository
-	employeeRepo *employee.Repository
+	employeeRepo employeeRepository
 	mailer       *mailer.Mailer
 	appBaseURL   string
 }
 
-func NewService(repo *Repository, employeeRepo *employee.Repository, mailer *mailer.Mailer, appBaseURL string) *Service {
+func NewService(repo *Repository, employeeRepo employeeRepository, mailer *mailer.Mailer, appBaseURL string) *Service {
 	return &Service{repo: repo, employeeRepo: employeeRepo, mailer: mailer, appBaseURL: appBaseURL}
 }
 
@@ -98,7 +103,7 @@ func (s *Service) Login(email, password string) (map[string]any, error) {
 
 	employeeModel, err := s.employeeRepo.GetByUserID(uint(user.ID))
 	if err != nil {
-		//user exists but has no employee profile yet
+		// user exists but has no employee profile yet
 		return map[string]any{
 			"token":     token,
 			"user_id":   strconv.FormatInt(user.ID, 10),

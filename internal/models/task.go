@@ -1,10 +1,6 @@
-package task
+package models
 
-import (
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
-	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
-	"time"
-)
+import "time"
 
 type Task struct {
 	ID           uint   `gorm:"primaryKey"`
@@ -20,13 +16,13 @@ type Task struct {
 	TimeSpent    uint
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	Status       board.Status
+	Status       Status
 	Priority     Priority
 	Difficulty   Difficulty
-	Board        board.Board
-	Developer    employee.Employee
-	Tester       employee.Employee
-	Reporter     employee.Employee
+	Board        Board
+	Developer    Employee
+	Tester       Employee
+	Reporter     Employee
 	Types        []Type `gorm:"many2many:task_types;"`
 }
 
