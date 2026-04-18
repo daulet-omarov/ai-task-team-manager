@@ -9,6 +9,7 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTMiddleware)
 		r.Post("/boards/{boardId}/tasks", h.Create)
+		r.Get("/boards/{boardId}/tasks", h.GetByBoardID)
 		r.Get("/tasks/{taskId}", h.GetByID)
 		r.Patch("/tasks/{taskId}", h.Update)
 	})

@@ -16,7 +16,8 @@ func (s *Seeder) SeedStatuses() {
             (6, 'TEST', 'test'),
             (7, 'READY FOR DEPLOY', 'ready_for_deploy'),
             (8, 'IN PRODUCTION', 'in_production'),
-            (9, 'DONE', 'done')
+            (9, 'DONE', 'done'),
+            (10, 'TO DO', 'to_do')
         ON CONFLICT (id) DO NOTHING
     `)
 

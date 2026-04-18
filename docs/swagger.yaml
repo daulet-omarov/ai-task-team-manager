@@ -75,6 +75,19 @@ definitions:
       isFirstLogin:
         type: boolean
     type: object
+  board.MemberResponse:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      photo:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: integer
+    type: object
   employee.EmployeeResponse:
     properties:
       birthday:
@@ -91,8 +104,6 @@ definitions:
         type: string
       photo:
         type: string
-      team:
-        $ref: '#/definitions/models.Team'
       user_id:
         type: integer
     type: object
@@ -121,15 +132,6 @@ definitions:
         type: string
     type: object
   models.Gender:
-    properties:
-      code:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
-  models.Team:
     properties:
       code:
         type: string
@@ -435,6 +437,32 @@ paths:
       tags:
       - Invite
   /boards/{boardId}/tasks:
+    get:
+      description: Returns all tasks for a board; caller must be a member
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task.TaskResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board tasks
+      tags:
+      - Task
     post:
       consumes:
       - application/json
@@ -498,6 +526,33 @@ paths:
       security:
       - BearerAuth: []
       summary: Get board
+      tags:
+      - Board
+  /boards/{id}/members:
+    get:
+      description: Returns all members of a board with their employee profile info
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/board.MemberResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board members
       tags:
       - Board
   /dashboard:
@@ -570,11 +625,6 @@ paths:
         name: email
         required: true
         type: string
-      - description: Team ID
-        in: formData
-        name: team_id
-        required: true
-        type: integer
       - description: Gender ID
         in: formData
         name: gender_id
@@ -626,10 +676,6 @@ paths:
         in: formData
         name: email
         type: string
-      - description: Team ID
-        in: formData
-        name: team_id
-        type: integer
       - description: Gender ID
         in: formData
         name: gender_id

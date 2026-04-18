@@ -29,7 +29,6 @@ func NewHandler(service *Service) *Handler {
 // @Param photo        formData file   false "Profile photo (jpeg/png/gif/webp, max 5 MB)"
 // @Param full_name    formData string true  "Full name"
 // @Param email        formData string true  "Email"
-// @Param team_id      formData int    true  "Team ID"
 // @Param gender_id    formData int    true  "Gender ID"
 // @Param birthday     formData string true  "Birthday (YYYY-MM-DD)"
 // @Param phone_number formData string false "Phone number"
@@ -53,11 +52,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	photoURL := uploader.FullURL(r, photoPath)
 
-	teamID, err := parseUintField(r, "team_id")
-	if err != nil {
-		response.Error(w, http.StatusBadRequest, "team_id must be a positive integer")
-		return
-	}
 	genderID, err := parseUintField(r, "gender_id")
 	if err != nil {
 		response.Error(w, http.StatusBadRequest, "gender_id must be a positive integer")
@@ -70,7 +64,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Birthday:    r.FormValue("birthday"),
 		PhoneNumber: r.FormValue("phone_number"),
 		Photo:       photoURL,
-		TeamID:      teamID,
 		GenderID:    genderID,
 	}
 
@@ -142,7 +135,6 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 // @Param photo        formData file   false "New profile photo"
 // @Param full_name    formData string false "Full name"
 // @Param email        formData string false "Email"
-// @Param team_id      formData int    false "Team ID"
 // @Param gender_id    formData int    false "Gender ID"
 // @Param birthday     formData string false "Birthday (YYYY-MM-DD)"
 // @Param phone_number formData string false "Phone number"
@@ -175,14 +167,6 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Photo:       photoURL,
 	}
 
-	if v := r.FormValue("team_id"); v != "" {
-		id, err := strconv.ParseUint(v, 10, 32)
-		if err != nil {
-			response.Error(w, http.StatusBadRequest, "team_id must be a positive integer")
-			return
-		}
-		req.TeamID = uint(id)
-	}
 	if v := r.FormValue("gender_id"); v != "" {
 		id, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
@@ -190,6 +174,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.GenderID = uint(id)
+	}
+
+	if req.PhoneNumber != "" {
+		if err := validatePhoneNumber(req.PhoneNumber); err != nil {
+			response.Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 
 	userID := uint(middleware.GetUserID(r))
@@ -269,11 +260,28 @@ func validateCreateRequest(req CreateEmployeeRequest) error {
 	if req.Birthday == "" {
 		return errField("birthday is required")
 	}
-	if req.TeamID == 0 {
-		return errField("team_id is required")
-	}
 	if req.GenderID == 0 {
 		return errField("gender_id is required")
+	}
+	if req.PhoneNumber != "" {
+		if err := validatePhoneNumber(req.PhoneNumber); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validatePhoneNumber(phone string) error {
+	if len(phone) != 11 {
+		return errField("phone_number must be exactly 11 digits")
+	}
+	for _, c := range phone {
+		if c < '0' || c > '9' {
+			return errField("phone_number must contain only digits")
+		}
+	}
+	if phone[0] != '8' {
+		return errField("phone_number must start with 8")
 	}
 	return nil
 }

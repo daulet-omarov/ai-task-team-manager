@@ -2,6 +2,8 @@ package board
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"gorm.io/gorm"
@@ -67,6 +69,11 @@ func (s *Service) Create(ownerID int64, req CreateBoardRequest) (*BoardResponse,
 		return nil, err
 	}
 
+	// Default statuses: TO DO, IN PROGRESS, DONE.
+	if err := s.repo.AddDefaultStatuses(b.ID); err != nil {
+		return nil, err
+	}
+
 	return &BoardResponse{
 		ID:          b.ID,
 		Name:        b.Name,
@@ -75,6 +82,47 @@ func (s *Service) Create(ownerID int64, req CreateBoardRequest) (*BoardResponse,
 		IsOwner:     true,
 		OwnerID:     ownerID,
 	}, nil
+}
+
+func (s *Service) GetMembers(boardID uint, userID int64) ([]*MemberResponse, error) {
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return nil, errors.New("access denied")
+	}
+	return s.repo.GetMembersWithDetails(boardID)
+}
+
+func (s *Service) GetStatuses(boardID uint, userID int64) ([]*StatusResponse, error) {
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return nil, errors.New("access denied")
+	}
+	return s.repo.GetBoardStatuses(boardID)
+}
+
+func (s *Service) CreateStatus(boardID uint, userID int64, req CreateStatusRequest) (*StatusResponse, error) {
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return nil, errors.New("access denied")
+	}
+	code := titleToCode(req.Title)
+	return s.repo.UpsertStatus(boardID, req.Title, code)
+}
+
+func (s *Service) ReorderStatuses(boardID uint, userID int64, req ReorderStatusesRequest) error {
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return errors.New("access denied")
+	}
+	return s.repo.ReorderStatuses(boardID, req.Statuses)
+}
+
+// titleToCode converts "Code Review" → "code_review".
+var nonAlphanumRe = regexp.MustCompile(`[^a-z0-9]+`)
+
+func titleToCode(title string) string {
+	lower := strings.ToLower(strings.TrimSpace(title))
+	return nonAlphanumRe.ReplaceAllString(lower, "_")
 }
 
 func (s *Service) GetByID(boardID uint, userID int64) (*BoardResponse, error) {

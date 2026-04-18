@@ -18,3 +18,31 @@ type DashboardResponse struct {
 	Boards       []BoardResponse `json:"boards"`
 	IsFirstLogin bool            `json:"isFirstLogin"`
 }
+
+type MemberResponse struct {
+	UserID   int64  `json:"user_id"`
+	Role     string `json:"role"`
+	FullName string `json:"full_name"`
+	Photo    string `json:"photo"`
+	Email    string `json:"email"`
+}
+
+type CreateStatusRequest struct {
+	Title string `json:"title" validate:"required,min=1,max=100"`
+}
+
+type StatusResponse struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	Code     string `json:"code"`
+	Position int    `json:"position"`
+}
+
+type ReorderStatusesRequest struct {
+	Statuses []StatusPosition `json:"statuses" validate:"required,min=1"`
+}
+
+type StatusPosition struct {
+	StatusID uint `json:"status_id" validate:"required"`
+	Position int  `json:"position" validate:"required"`
+}

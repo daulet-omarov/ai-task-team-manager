@@ -7,7 +7,7 @@ type Task struct {
 	Title        string `gorm:"not null"`
 	StatusID     uint
 	PriorityID   uint
-	DifficultyID uint
+	DifficultyID *uint
 	BoardID      uint
 	DeveloperID  uint
 	TesterID     uint

@@ -375,6 +375,47 @@ const docTemplate = `{
             }
         },
         "/boards/{boardId}/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all tasks for a board; caller must be a member",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get board tasks",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/task.TaskResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -478,6 +519,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/boards/{id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all members of a board with their employee profile info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Get board members",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/board.MemberResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/dashboard": {
             "get": {
                 "security": [
@@ -573,12 +657,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Team ID",
-                        "name": "team_id",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
                         "description": "Gender ID",
                         "name": "gender_id",
                         "in": "formData"
@@ -658,13 +736,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Email",
                         "name": "email",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Team ID",
-                        "name": "team_id",
                         "in": "formData",
                         "required": true
                     },
@@ -1181,6 +1252,26 @@ const docTemplate = `{
                 }
             }
         },
+        "board.MemberResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "employee.EmployeeResponse": {
             "type": "object",
             "properties": {
@@ -1204,9 +1295,6 @@ const docTemplate = `{
                 },
                 "photo": {
                     "type": "string"
-                },
-                "team": {
-                    "$ref": "#/definitions/models.Team"
                 },
                 "user_id": {
                     "type": "integer"
@@ -1251,20 +1339,6 @@ const docTemplate = `{
             }
         },
         "models.Gender": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Team": {
             "type": "object",
             "properties": {
                 "code": {

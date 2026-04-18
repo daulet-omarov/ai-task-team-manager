@@ -59,6 +59,38 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, task)
 }
 
+// GetByBoardID godoc
+// @Summary Get board tasks
+// @Description Returns all tasks for a board; caller must be a member
+// @Tags Task
+// @Security BearerAuth
+// @Produce json
+// @Param boardId path int true "Board ID"
+// @Success 200 {array} TaskResponse
+// @Failure 403 {string} string "access denied"
+// @Router /boards/{boardId}/tasks [get]
+func (h *Handler) GetByBoardID(w http.ResponseWriter, r *http.Request) {
+	boardID, err := strconv.ParseUint(chi.URLParam(r, "boardId"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	tasks, err := h.service.GetByBoardID(uint(boardID), userID)
+	if err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, tasks)
+}
+
 // GetByID godoc
 // @Summary Get task
 // @Description Get task by ID; caller must be a board member

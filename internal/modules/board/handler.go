@@ -99,3 +99,148 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, board)
 }
+
+// GetStatuses godoc
+// @Summary Get board statuses
+// @Description Returns statuses of a board ordered by position; caller must be a member
+// @Tags Board
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Board ID"
+// @Success 200 {array} StatusResponse
+// @Failure 403 {string} string "access denied"
+// @Router /boards/{id}/statuses [get]
+func (h *Handler) GetStatuses(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	statuses, err := h.service.GetStatuses(uint(id), userID)
+	if err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, statuses)
+}
+
+// CreateStatus godoc
+// @Summary Create board status
+// @Description Add a new status to a board; caller must be a member
+// @Tags Board
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Board ID"
+// @Param request body CreateStatusRequest true "Create status request"
+// @Success 201 {object} StatusResponse
+// @Failure 400 {string} string "bad request"
+// @Failure 403 {string} string "access denied"
+// @Router /boards/{id}/statuses [post]
+func (h *Handler) CreateStatus(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	var req CreateStatusRequest
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	status, err := h.service.CreateStatus(uint(id), userID, req)
+	if err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusCreated, status)
+}
+
+// ReorderStatuses godoc
+// @Summary Reorder board statuses
+// @Description Update the position of statuses on a board; caller must be a member
+// @Tags Board
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Board ID"
+// @Param request body ReorderStatusesRequest true "New order"
+// @Success 200 {string} string "ok"
+// @Failure 400 {string} string "bad request"
+// @Failure 403 {string} string "access denied"
+// @Router /boards/{id}/statuses/reorder [patch]
+func (h *Handler) ReorderStatuses(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	var req ReorderStatusesRequest
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.ReorderStatuses(uint(id), userID, req); err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetMembers godoc
+// @Summary Get board members
+// @Description Returns all members of a board with their employee profile info
+// @Tags Board
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Board ID"
+// @Success 200 {array} MemberResponse
+// @Failure 403 {string} string "access denied"
+// @Router /boards/{id}/members [get]
+func (h *Handler) GetMembers(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	members, err := h.service.GetMembers(uint(id), userID)
+	if err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, members)
+}

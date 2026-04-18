@@ -17,7 +17,6 @@ func (s *Seeder) Run() {
 	s.SeedGenders()
 	s.SeedRoles()
 	s.SeedStatuses()
-	s.SeedTeams()
 	s.SeedTaskDifficulties()
 	s.SeedTaskPriorities()
 

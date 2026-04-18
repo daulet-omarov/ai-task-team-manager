@@ -22,11 +22,11 @@ func (s *Service) Create(userID uint, req CreateEmployeeRequest) error {
 	}
 
 	e := &models.Employee{
+		ID:          userID, // employee.id == user.id always (1-to-1)
 		UserID:      userID,
 		FullName:    req.FullName,
 		Photo:       req.Photo,
 		Email:       req.Email,
-		TeamID:      req.TeamID,
 		Birthday:    birthday,
 		PhoneNumber: req.PhoneNumber,
 		GenderID:    req.GenderID,
@@ -79,9 +79,6 @@ func (s *Service) Update(userID uint, req UpdateEmployeeRequest) error {
 	if req.Email != "" {
 		e.Email = req.Email
 	}
-	if req.TeamID != 0 {
-		e.TeamID = req.TeamID
-	}
 	if req.GenderID != 0 {
 		e.GenderID = req.GenderID
 	}
@@ -122,7 +119,6 @@ func toResponse(e *models.Employee) *EmployeeResponse {
 		Email:       e.Email,
 		PhoneNumber: e.PhoneNumber,
 		Birthday:    e.Birthday.Format("2006-01-02"),
-		Team:        e.Team,
 		Gender:      e.Gender,
 	}
 }

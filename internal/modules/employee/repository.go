@@ -20,7 +20,6 @@ func (r *Repository) Create(e *models.Employee) error {
 func (r *Repository) GetByID(id uint) (*models.Employee, error) {
 	var e models.Employee
 	err := r.db.
-		Preload("Team").
 		Preload("Gender").
 		First(&e, id).Error
 	if err != nil {
@@ -32,7 +31,6 @@ func (r *Repository) GetByID(id uint) (*models.Employee, error) {
 func (r *Repository) GetByUserID(userID uint) (*models.Employee, error) {
 	var e models.Employee
 	err := r.db.
-		Preload("Team").
 		Preload("Gender").
 		Where("user_id = ?", userID).
 		First(&e).Error
@@ -45,7 +43,6 @@ func (r *Repository) GetByUserID(userID uint) (*models.Employee, error) {
 func (r *Repository) GetAll() ([]*models.Employee, error) {
 	var employees []*models.Employee
 	err := r.db.
-		Preload("Team").
 		Preload("Gender").
 		Find(&employees).Error
 	return employees, err
