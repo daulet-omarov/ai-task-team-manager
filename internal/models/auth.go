@@ -1,4 +1,4 @@
-package auth
+package models
 
 import "time"
 
@@ -8,6 +8,7 @@ type User struct {
 	Password   string
 	IsVerified bool
 	CreatedAt  time.Time
+	Employee   *Employee
 }
 
 type EmailVerificationToken struct {

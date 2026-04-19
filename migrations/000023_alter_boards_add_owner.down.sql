@@ -1,0 +1,3 @@
+ALTER TABLE boards
+    DROP COLUMN IF EXISTS owner_id,
+    DROP COLUMN IF EXISTS description;

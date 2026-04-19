@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(GOTOOLCHAIN=auto go build ./...)",
+      "Bash(GOTOOLCHAIN=auto go vet ./...)",
+      "Bash(GOTOOLCHAIN=auto go list -f '{{.ImportPath}} imports {{.Imports}}' ./internal/...)",
+      "Bash(grep -v \"^$\")"
+    ]
+  }
+}

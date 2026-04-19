@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  attachment.AttachmentResponse:
+    properties:
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      task_id:
+        type: integer
+      url:
+        type: string
+    type: object
   auth.ForgotPasswordRequest:
     properties:
       email:
@@ -39,7 +54,270 @@ definitions:
     - new_password
     - token
     type: object
-host: localhost:7777
+  board.BoardResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      isOwner:
+        type: boolean
+      memberCount:
+        type: integer
+      name:
+        type: string
+      ownerId:
+        type: integer
+    type: object
+  board.CreateBoardRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  board.CreateStatusRequest:
+    properties:
+      board_id:
+        type: integer
+      colour:
+        type: string
+      title:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - board_id
+    - title
+    type: object
+  board.DashboardResponse:
+    properties:
+      boards:
+        items:
+          $ref: '#/definitions/board.BoardResponse'
+        type: array
+      isFirstLogin:
+        type: boolean
+    type: object
+  board.MemberResponse:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      photo:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  board.ReorderStatusesRequest:
+    properties:
+      statuses:
+        items:
+          $ref: '#/definitions/board.StatusPosition'
+        minItems: 1
+        type: array
+    required:
+    - statuses
+    type: object
+  board.StatusPosition:
+    properties:
+      board_status_id:
+        type: integer
+      position:
+        type: integer
+    required:
+    - board_status_id
+    - position
+    type: object
+  board.StatusResponse:
+    properties:
+      board_status_id:
+        description: id in board_statuses — use for reorder/delete
+        type: integer
+      code:
+        type: string
+      colour:
+        type: string
+      name:
+        type: string
+      position:
+        type: integer
+      status_id:
+        type: integer
+    type: object
+  board.UpdateStatusRequest:
+    properties:
+      colour:
+        type: string
+      title:
+        type: string
+    type: object
+  comment.CommentResponse:
+    properties:
+      author_id:
+        type: integer
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      task_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  comment.CreateCommentRequest:
+    properties:
+      content:
+        minLength: 1
+        type: string
+    required:
+    - content
+    type: object
+  employee.EmployeeResponse:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      gender:
+        $ref: '#/definitions/models.Gender'
+      id:
+        type: integer
+      phone_number:
+        type: string
+      photo:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  invite.CreateInviteRequest:
+    properties:
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  invite.InviteResponse:
+    properties:
+      board_id:
+        type: integer
+      board_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      invitee_id:
+        type: integer
+      inviter_id:
+        type: integer
+      status:
+        type: string
+    type: object
+  models.Gender:
+    properties:
+      code:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  task.AttachmentInfo:
+    properties:
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      url:
+        type: string
+    type: object
+  task.CommentInfo:
+    properties:
+      author_id:
+        type: integer
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  task.TaskResponse:
+    properties:
+      assignee_id:
+        type: integer
+      attachments:
+        items:
+          $ref: '#/definitions/task.AttachmentInfo'
+        type: array
+      board_id:
+        type: integer
+      comments:
+        items:
+          $ref: '#/definitions/task.CommentInfo'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      difficulty_id:
+        type: integer
+      id:
+        type: integer
+      priority_id:
+        type: integer
+      reporter_id:
+        type: integer
+      status_id:
+        type: integer
+      tester_id:
+        type: integer
+      time_spent:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  task.UpdateTaskRequest:
+    properties:
+      assignee_id:
+        description: employee ID
+        type: integer
+      description:
+        type: string
+      difficulty_id:
+        type: integer
+      priority_id:
+        type: integer
+      status_id:
+        type: integer
+      tester_id:
+        description: employee ID
+        type: integer
+      time_spent:
+        type: integer
+      title:
+        type: string
+    type: object
+host: 192.168.100.32:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -47,6 +325,33 @@ info:
   title: AI Task Team Manager API
   version: "1.0"
 paths:
+  /attachments/{attachmentId}:
+    delete:
+      description: Delete an attachment; caller must be a board member
+      parameters:
+      - description: Attachment ID
+        in: path
+        name: attachmentId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: attachment not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete attachment
+      tags:
+      - Attachment
   /auth/account:
     delete:
       description: Delete the authenticated user's account
@@ -209,6 +514,914 @@ paths:
       summary: Verify email address
       tags:
       - Auth
+  /boards:
+    post:
+      consumes:
+      - application/json
+      description: Create a new board; the caller becomes the owner
+      parameters:
+      - description: Create board request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.CreateBoardRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/board.BoardResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create board
+      tags:
+      - Board
+  /boards/{boardId}/invite:
+    post:
+      consumes:
+      - application/json
+      description: Board owner invites a user to the board
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Invite request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/invite.CreateInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: invitation sent
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: only the board owner can send invitations
+          schema:
+            type: string
+        "409":
+          description: already a member / invitation already pending
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Send invitation
+      tags:
+      - Invite
+  /boards/{boardId}/tasks:
+    get:
+      description: Returns all tasks for a board; caller must be a member
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/task.TaskResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board tasks
+      tags:
+      - Task
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a task inside a board; accepts multipart/form-data so attachments
+        can be uploaded in the same request
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Title
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Description
+        in: formData
+        name: description
+        type: string
+      - description: Priority ID
+        in: formData
+        name: priority_id
+        type: integer
+      - description: Difficulty ID
+        in: formData
+        name: difficulty_id
+        type: integer
+      - description: Assignee employee ID
+        in: formData
+        name: assignee_id
+        type: integer
+      - description: Tester employee ID
+        in: formData
+        name: tester_id
+        type: integer
+      - description: Attachments (repeat field for multiple files)
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Add task to board
+      tags:
+      - Task
+  /boards/{id}:
+    get:
+      description: Get board by ID (user must be a member)
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/board.BoardResponse'
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: board not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board
+      tags:
+      - Board
+  /boards/{id}/members:
+    get:
+      description: Returns all members of a board with their employee profile info
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/board.MemberResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board members
+      tags:
+      - Board
+  /boards/{id}/statuses:
+    get:
+      description: Returns statuses of a board ordered by position; caller must be
+        a member
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/board.StatusResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board statuses
+      tags:
+      - Board
+  /comments/{commentId}:
+    delete:
+      description: Delete a comment; only the author can delete
+      parameters:
+      - description: Comment ID
+        in: path
+        name: commentId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: comment not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete comment
+      tags:
+      - Comment
+  /dashboard:
+    get:
+      description: Returns user's boards and isFirstLogin flag
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/board.DashboardResponse'
+      security:
+      - BearerAuth: []
+      summary: Dashboard
+      tags:
+      - Board
+  /employees:
+    delete:
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - Employee
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/employee.EmployeeResponse'
+            type: array
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get all employees
+      tags:
+      - Employee
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new employee profile. Accepts multipart/form-data so photo
+        can be uploaded in the same request.
+      parameters:
+      - description: Profile photo (jpeg/png/gif/webp, max 5 MB)
+        in: formData
+        name: photo
+        type: file
+      - description: Full name
+        in: formData
+        name: full_name
+        required: true
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Gender ID
+        in: formData
+        name: gender_id
+        required: true
+        type: integer
+      - description: Birthday (YYYY-MM-DD)
+        in: formData
+        name: birthday
+        required: true
+        type: string
+      - description: Phone number
+        in: formData
+        name: phone_number
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create employee
+      tags:
+      - Employee
+    put:
+      consumes:
+      - multipart/form-data
+      description: Accepts multipart/form-data. Send only the fields you want to change.
+      parameters:
+      - description: New profile photo
+        in: formData
+        name: photo
+        type: file
+      - description: Full name
+        in: formData
+        name: full_name
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        type: string
+      - description: Gender ID
+        in: formData
+        name: gender_id
+        type: integer
+      - description: Birthday (YYYY-MM-DD)
+        in: formData
+        name: birthday
+        type: string
+      - description: Phone number
+        in: formData
+        name: phone_number
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update employee profile
+      tags:
+      - Employee
+  /employees/exists:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Check if employee profile exists
+      tags:
+      - Employee
+  /employees/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/employee.EmployeeResponse'
+        "404":
+          description: not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get my employee profile
+      tags:
+      - Employee
+  /invites:
+    get:
+      description: Returns all pending invitations for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/invite.InviteResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List my invitations
+      tags:
+      - Invite
+  /invites/{inviteId}/accept:
+    post:
+      description: Accept a pending board invitation
+      parameters:
+      - description: Invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: accepted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: invitation not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Accept invitation
+      tags:
+      - Invite
+  /invites/{inviteId}/reject:
+    post:
+      description: Reject a pending board invitation
+      parameters:
+      - description: Invite ID
+        in: path
+        name: inviteId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: rejected
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: invitation not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Reject invitation
+      tags:
+      - Invite
+  /statuses:
+    post:
+      consumes:
+      - application/json
+      description: Add a new status to a board; accepts title + board_id in body;
+        caller must be a member
+      parameters:
+      - description: Create status request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.CreateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/board.StatusResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create board status
+      tags:
+      - Board
+  /statuses/{boardStatusId}:
+    delete:
+      description: Remove a status from a board by board_status_id; caller must be
+        a member
+      parameters:
+      - description: Board Status ID
+        in: path
+        name: boardStatusId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: status not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete board status
+      tags:
+      - Board
+    patch:
+      consumes:
+      - application/json
+      description: Update title and/or colour of a board status; caller must be a
+        member
+      parameters:
+      - description: Board Status ID
+        in: path
+        name: boardStatusId
+        required: true
+        type: integer
+      - description: Update status request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/board.StatusResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: status not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update board status
+      tags:
+      - Board
+  /statuses/reorder:
+    patch:
+      consumes:
+      - application/json
+      description: Update positions using board_status_id; caller must be a member
+        of the board
+      parameters:
+      - description: New order
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.ReorderStatusesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Reorder board statuses
+      tags:
+      - Board
+  /tasks/{taskId}:
+    get:
+      description: Get task by ID; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get task
+      tags:
+      - Task
+    patch:
+      consumes:
+      - application/json
+      description: Partially update a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      - description: Update task request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/task.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/task.TaskResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update task
+      tags:
+      - Task
+  /tasks/{taskId}/attachments:
+    get:
+      description: Returns all attachments for a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/attachment.AttachmentResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get task attachments
+      tags:
+      - Attachment
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file attachment to a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/attachment.AttachmentResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Upload attachment
+      tags:
+      - Attachment
+  /tasks/{taskId}/comments:
+    get:
+      description: Returns all comments for a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/comment.CommentResponse'
+            type: array
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get task comments
+      tags:
+      - Comment
+    post:
+      consumes:
+      - application/json
+      description: Add a comment to a task; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      - description: Comment body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/comment.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/comment.CommentResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Add comment
+      tags:
+      - Comment
+  /upload/photo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a profile photo (max 5 MB, jpeg/png/gif/webp). Returns a
+        URL to use in employee fields.
+      parameters:
+      - description: Photo file
+        in: formData
+        name: photo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: bad request
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Upload photo
+      tags:
+      - Upload
 securityDefinitions:
   BearerAuth:
     description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".
