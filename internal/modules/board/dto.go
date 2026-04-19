@@ -28,14 +28,23 @@ type MemberResponse struct {
 }
 
 type CreateStatusRequest struct {
-	Title string `json:"title" validate:"required,min=1,max=100"`
+	Title   string `json:"title"    validate:"required,min=1,max=100"`
+	BoardID uint   `json:"board_id" validate:"required"`
+	Colour  string `json:"colour"`
+}
+
+type UpdateStatusRequest struct {
+	Title  string `json:"title"`
+	Colour string `json:"colour"`
 }
 
 type StatusResponse struct {
-	ID       uint   `json:"id"`
-	Name     string `json:"name"`
-	Code     string `json:"code"`
-	Position int    `json:"position"`
+	BoardStatusID uint   `json:"board_status_id"` // id in board_statuses — use for reorder/delete
+	StatusID      uint   `json:"status_id"`
+	Name          string `json:"name"`
+	Code          string `json:"code"`
+	Position      int    `json:"position"`
+	Colour        string `json:"colour"`
 }
 
 type ReorderStatusesRequest struct {
@@ -43,6 +52,6 @@ type ReorderStatusesRequest struct {
 }
 
 type StatusPosition struct {
-	StatusID uint `json:"status_id" validate:"required"`
-	Position int  `json:"position" validate:"required"`
+	BoardStatusID uint `json:"board_status_id" validate:"required"`
+	Position      int  `json:"position"        validate:"required"`
 }

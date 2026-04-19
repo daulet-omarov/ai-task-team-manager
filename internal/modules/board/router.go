@@ -13,7 +13,9 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Get("/boards/{id}", h.GetByID)
 		r.Get("/boards/{id}/members", h.GetMembers)
 		r.Get("/boards/{id}/statuses", h.GetStatuses)
-		r.Post("/boards/{id}/statuses", h.CreateStatus)
-		r.Patch("/boards/{id}/statuses/reorder", h.ReorderStatuses)
+		r.Post("/statuses", h.CreateStatus)
+		r.Patch("/statuses/reorder", h.ReorderStatuses)
+		r.Patch("/statuses/{boardStatusId}", h.UpdateStatus)
+		r.Delete("/statuses/{boardStatusId}", h.DeleteStatus)
 	})
 }

@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
@@ -21,6 +23,8 @@ func SetupRouter(
 	taskHandler *task.Handler,
 	inviteHandler *invite.Handler,
 	uploadHandler *upload.Handler,
+	commentHandler *comment.Handler,
+	attachmentHandler *attachment.Handler,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
@@ -51,6 +55,8 @@ func SetupRouter(
 	task.RegisterRoutes(r, taskHandler)
 	invite.RegisterRoutes(r, inviteHandler)
 	upload.RegisterRoutes(r, uploadHandler)
+	comment.RegisterRoutes(r, commentHandler)
+	attachment.RegisterRoutes(r, attachmentHandler)
 
 	// Serve uploaded files as static assets: GET /uploads/<filename>
 	fileServer := http.FileServer(http.Dir("./uploads"))

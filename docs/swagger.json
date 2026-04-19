@@ -9,6 +9,49 @@
     "host": "192.168.100.32:8080",
     "basePath": "/",
     "paths": {
+        "/attachments/{attachmentId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete an attachment; caller must be a board member",
+                "tags": [
+                    "Attachment"
+                ],
+                "summary": "Delete attachment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachmentId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "attachment not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/account": {
             "delete": {
                 "security": [
@@ -416,9 +459,9 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a task inside a board; caller must be a board member",
+                "description": "Create a task inside a board; accepts multipart/form-data so attachments can be uploaded in the same request",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -436,13 +479,47 @@
                         "required": true
                     },
                     {
-                        "description": "Create task request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/task.CreateTaskRequest"
-                        }
+                        "type": "string",
+                        "description": "Title",
+                        "name": "title",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Description",
+                        "name": "description",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Priority ID",
+                        "name": "priority_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Difficulty ID",
+                        "name": "difficulty_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Assignee employee ID",
+                        "name": "assignee_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Tester employee ID",
+                        "name": "tester_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Attachments (repeat field for multiple files)",
+                        "name": "attachments",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -549,6 +626,92 @@
                     },
                     "403": {
                         "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{id}/statuses": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns statuses of a board ordered by position; caller must be a member",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Get board statuses",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/board.StatusResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/comments/{commentId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a comment; only the author can delete",
+                "tags": [
+                    "Comment"
+                ],
+                "summary": "Delete comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Comment ID",
+                        "name": "commentId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "comment not found",
                         "schema": {
                             "type": "string"
                         }
@@ -978,6 +1141,213 @@
                 }
             }
         },
+        "/statuses": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a new status to a board; accepts title + board_id in body; caller must be a member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Create board status",
+                "parameters": [
+                    {
+                        "description": "Create status request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/board.CreateStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/board.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/statuses/reorder": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update positions using board_status_id; caller must be a member of the board",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Reorder board statuses",
+                "parameters": [
+                    {
+                        "description": "New order",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/board.ReorderStatusesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/statuses/{boardStatusId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove a status from a board by board_status_id; caller must be a member",
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Delete board status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board Status ID",
+                        "name": "boardStatusId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "status not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update title and/or colour of a board status; caller must be a member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Update board status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board Status ID",
+                        "name": "boardStatusId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update status request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/board.UpdateStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/board.StatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "status not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/{taskId}": {
             "get": {
                 "security": [
@@ -1086,6 +1456,226 @@
                 }
             }
         },
+        "/tasks/{taskId}/attachments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all attachments for a task; caller must be a board member",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachment"
+                ],
+                "summary": "Get task attachments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/attachment.AttachmentResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a file attachment to a task; caller must be a board member",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attachment"
+                ],
+                "summary": "Upload attachment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/attachment.AttachmentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{taskId}/comments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all comments for a task; caller must be a board member",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comment"
+                ],
+                "summary": "Get task comments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/comment.CommentResponse"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a comment to a task; caller must be a board member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comment"
+                ],
+                "summary": "Add comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Comment body",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/comment.CreateCommentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/comment.CommentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/upload/photo": {
             "post": {
                 "security": [
@@ -1134,6 +1724,29 @@
         }
     },
     "definitions": {
+        "attachment.AttachmentResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "task_id": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.ForgotPasswordRequest": {
             "type": "object",
             "required": [
@@ -1232,6 +1845,26 @@
                 }
             }
         },
+        "board.CreateStatusRequest": {
+            "type": "object",
+            "required": [
+                "board_id",
+                "title"
+            ],
+            "properties": {
+                "board_id": {
+                    "type": "integer"
+                },
+                "colour": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
         "board.DashboardResponse": {
             "type": "object",
             "properties": {
@@ -1263,6 +1896,106 @@
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "board.ReorderStatusesRequest": {
+            "type": "object",
+            "required": [
+                "statuses"
+            ],
+            "properties": {
+                "statuses": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/board.StatusPosition"
+                    }
+                }
+            }
+        },
+        "board.StatusPosition": {
+            "type": "object",
+            "required": [
+                "board_status_id",
+                "position"
+            ],
+            "properties": {
+                "board_status_id": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                }
+            }
+        },
+        "board.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "board_status_id": {
+                    "description": "id in board_statuses — use for reorder/delete",
+                    "type": "integer"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "colour": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "status_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "board.UpdateStatusRequest": {
+            "type": "object",
+            "properties": {
+                "colour": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "comment.CommentResponse": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "task_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "comment.CreateCommentRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "minLength": 1
                 }
             }
         },
@@ -1346,26 +2079,40 @@
                 }
             }
         },
-        "task.CreateTaskRequest": {
+        "task.AttachmentInfo": {
             "type": "object",
-            "required": [
-                "title"
-            ],
             "properties": {
-                "assignee_id": {
-                    "description": "employee ID",
-                    "type": "integer"
-                },
-                "description": {
+                "file_name": {
                     "type": "string"
                 },
-                "priority_id": {
+                "file_size": {
                     "type": "integer"
                 },
-                "title": {
-                    "type": "string",
-                    "maxLength": 200,
-                    "minLength": 1
+                "id": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "task.CommentInfo": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -1375,14 +2122,29 @@
                 "assignee_id": {
                     "type": "integer"
                 },
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/task.AttachmentInfo"
+                    }
+                },
                 "board_id": {
                     "type": "integer"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/task.CommentInfo"
+                    }
                 },
                 "created_at": {
                     "type": "string"
                 },
                 "description": {
                     "type": "string"
+                },
+                "difficulty_id": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "integer"
@@ -1394,6 +2156,9 @@
                     "type": "integer"
                 },
                 "status_id": {
+                    "type": "integer"
+                },
+                "tester_id": {
                     "type": "integer"
                 },
                 "time_spent": {
@@ -1417,10 +2182,17 @@
                 "description": {
                     "type": "string"
                 },
+                "difficulty_id": {
+                    "type": "integer"
+                },
                 "priority_id": {
                     "type": "integer"
                 },
                 "status_id": {
+                    "type": "integer"
+                },
+                "tester_id": {
+                    "description": "employee ID",
                     "type": "integer"
                 },
                 "time_spent": {

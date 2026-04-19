@@ -75,7 +75,7 @@ func (r *Repository) AddDefaultStatuses(boardID uint) error {
 func (r *Repository) GetBoardStatuses(boardID uint) ([]*StatusResponse, error) {
 	var rows []*StatusResponse
 	err := r.db.Raw(`
-		SELECT s.id, s.name, s.code, bs.position
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour
 		FROM board_statuses bs
 		JOIN statuses s ON s.id = bs.status_id
 		WHERE bs.board_id = ?
@@ -96,8 +96,7 @@ func (r *Repository) nextPosition(boardID uint) (int, error) {
 
 // UpsertStatus inserts a status by code (generating from title) if it doesn't exist,
 // then links it to the board. Returns the StatusResponse.
-func (r *Repository) UpsertStatus(boardID uint, name, code string) (*StatusResponse, error) {
-	// Insert into global statuses if code is new; otherwise reuse existing row.
+func (r *Repository) UpsertStatus(boardID uint, name, code, colour string) (*StatusResponse, error) {
 	err := r.db.Exec(`
 		INSERT INTO statuses (name, code) VALUES (?, ?)
 		ON CONFLICT (code) DO NOTHING
@@ -117,29 +116,84 @@ func (r *Repository) UpsertStatus(boardID uint, name, code string) (*StatusRespo
 	}
 
 	err = r.db.Exec(`
-		INSERT INTO board_statuses (board_id, status_id, position) VALUES (?, ?, ?)
+		INSERT INTO board_statuses (board_id, status_id, position, colour) VALUES (?, ?, ?, ?)
 		ON CONFLICT (status_id, board_id) DO NOTHING
-	`, boardID, statusID, pos).Error
+	`, boardID, statusID, pos, colour).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &StatusResponse{ID: statusID, Name: name, Code: code, Position: pos}, nil
+	var boardStatusID uint
+	if err := r.db.Raw(
+		"SELECT id FROM board_statuses WHERE board_id = ? AND status_id = ?",
+		boardID, statusID,
+	).Scan(&boardStatusID).Error; err != nil {
+		return nil, err
+	}
+
+	return &StatusResponse{
+		BoardStatusID: boardStatusID,
+		StatusID:      statusID,
+		Name:          name,
+		Code:          code,
+		Position:      pos,
+		Colour:        colour,
+	}, nil
 }
 
-// ReorderStatuses updates positions in board_statuses for the given board.
-func (r *Repository) ReorderStatuses(boardID uint, positions []StatusPosition) error {
+func (r *Repository) UpdateBoardStatus(boardStatusID uint, title, colour string) (*StatusResponse, error) {
+	if title != "" {
+		if err := r.db.Exec(
+			"UPDATE statuses SET name = ? WHERE id = (SELECT status_id FROM board_statuses WHERE id = ?)",
+			title, boardStatusID,
+		).Error; err != nil {
+			return nil, err
+		}
+	}
+	if colour != "" {
+		if err := r.db.Exec(
+			"UPDATE board_statuses SET colour = ? WHERE id = ?",
+			colour, boardStatusID,
+		).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	var row StatusResponse
+	err := r.db.Raw(`
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour
+		FROM board_statuses bs
+		JOIN statuses s ON s.id = bs.status_id
+		WHERE bs.id = ?
+	`, boardStatusID).Scan(&row).Error
+	return &row, err
+}
+
+// ReorderStatuses updates positions using board_statuses.id (board_status_id).
+func (r *Repository) ReorderStatuses(positions []StatusPosition) error {
 	tx := r.db.Begin()
 	for _, sp := range positions {
 		if err := tx.Exec(
-			"UPDATE board_statuses SET position = ? WHERE board_id = ? AND status_id = ?",
-			sp.Position, boardID, sp.StatusID,
+			"UPDATE board_statuses SET position = ? WHERE id = ?",
+			sp.Position, sp.BoardStatusID,
 		).Error; err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
 	return tx.Commit().Error
+}
+
+// DeleteBoardStatus removes a status from a board by board_statuses.id.
+// Returns the boardID so the caller can verify membership.
+func (r *Repository) GetBoardIDByBoardStatusID(boardStatusID uint) (uint, error) {
+	var boardID uint
+	err := r.db.Raw("SELECT board_id FROM board_statuses WHERE id = ?", boardStatusID).Scan(&boardID).Error
+	return boardID, err
+}
+
+func (r *Repository) DeleteBoardStatus(boardStatusID uint) error {
+	return r.db.Exec("DELETE FROM board_statuses WHERE id = ?", boardStatusID).Error
 }
 
 func (r *Repository) CountMembers(boardID uint) (int64, error) {

@@ -100,21 +100,41 @@ func (s *Service) GetStatuses(boardID uint, userID int64) ([]*StatusResponse, er
 	return s.repo.GetBoardStatuses(boardID)
 }
 
-func (s *Service) CreateStatus(boardID uint, userID int64, req CreateStatusRequest) (*StatusResponse, error) {
-	isMember, err := s.repo.IsMember(boardID, userID)
+func (s *Service) CreateStatus(userID int64, req CreateStatusRequest) (*StatusResponse, error) {
+	isMember, err := s.repo.IsMember(req.BoardID, userID)
 	if err != nil || !isMember {
 		return nil, errors.New("access denied")
 	}
 	code := titleToCode(req.Title)
-	return s.repo.UpsertStatus(boardID, req.Title, code)
+	return s.repo.UpsertStatus(req.BoardID, req.Title, code, req.Colour)
 }
 
-func (s *Service) ReorderStatuses(boardID uint, userID int64, req ReorderStatusesRequest) error {
+func (s *Service) UpdateStatus(boardStatusID uint, userID int64, req UpdateStatusRequest) (*StatusResponse, error) {
+	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
+	if err != nil || boardID == 0 {
+		return nil, errors.New("status not found")
+	}
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return nil, errors.New("access denied")
+	}
+	return s.repo.UpdateBoardStatus(boardStatusID, req.Title, req.Colour)
+}
+
+func (s *Service) ReorderStatuses(userID int64, req ReorderStatusesRequest) error {
+	return s.repo.ReorderStatuses(req.Statuses)
+}
+
+func (s *Service) DeleteStatus(boardStatusID uint, userID int64) error {
+	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
+	if err != nil || boardID == 0 {
+		return errors.New("status not found")
+	}
 	isMember, err := s.repo.IsMember(boardID, userID)
 	if err != nil || !isMember {
 		return errors.New("access denied")
 	}
-	return s.repo.ReorderStatuses(boardID, req.Statuses)
+	return s.repo.DeleteBoardStatus(boardStatusID)
 }
 
 // titleToCode converts "Code Review" → "code_review".
