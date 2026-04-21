@@ -209,7 +209,8 @@ func (r *Repository) CountMembers(boardID uint) (int64, error) {
 func (r *Repository) GetMembersWithDetails(boardID uint) ([]*MemberResponse, error) {
 	var rows []*MemberResponse
 	err := r.db.Raw(`
-		SELECT bm.user_id,
+		SELECT bm.id AS board_member_id,
+		       bm.user_id,
 		       bm.role,
 		       COALESCE(e.full_name, '')  AS full_name,
 		       COALESCE(e.photo, '')      AS photo,
@@ -220,4 +221,30 @@ func (r *Repository) GetMembersWithDetails(boardID uint) ([]*MemberResponse, err
 		ORDER BY bm.joined_at
 	`, boardID).Scan(&rows).Error
 	return rows, err
+}
+
+// Delete removes a board by ID.
+func (r *Repository) Delete(boardID uint) error {
+	return r.db.Delete(&models.Board{}, boardID).Error
+}
+
+// IsOwner reports whether userID is the owner of boardID.
+func (r *Repository) IsOwner(boardID uint, userID int64) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.BoardMember{}).
+		Where("board_id = ? AND user_id = ? AND role = 'owner'", boardID, userID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+// GetMemberByID returns a board member row by its primary key.
+func (r *Repository) GetMemberByID(boardMemberID uint) (*models.BoardMember, error) {
+	var m models.BoardMember
+	err := r.db.First(&m, boardMemberID).Error
+	return &m, err
+}
+
+// DeleteMember removes a board_members row by its primary key.
+func (r *Repository) DeleteMember(boardMemberID uint) error {
+	return r.db.Delete(&models.BoardMember{}, boardMemberID).Error
 }

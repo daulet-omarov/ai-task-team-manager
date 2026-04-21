@@ -20,11 +20,12 @@ type DashboardResponse struct {
 }
 
 type MemberResponse struct {
-	UserID   int64  `json:"user_id"`
-	Role     string `json:"role"`
-	FullName string `json:"full_name"`
-	Photo    string `json:"photo"`
-	Email    string `json:"email"`
+	BoardMemberID uint   `json:"board_member_id"`
+	UserID        int64  `json:"user_id"`
+	Role          string `json:"role"`
+	FullName      string `json:"full_name"`
+	Photo         string `json:"photo"`
+	Email         string `json:"email"`
 }
 
 type CreateStatusRequest struct {

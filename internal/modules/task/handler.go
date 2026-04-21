@@ -155,6 +155,40 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, task)
 }
 
+// Delete godoc
+// @Summary Delete task
+// @Description Delete a task by ID; caller must be a board member
+// @Tags Task
+// @Security BearerAuth
+// @Param taskId path int true "Task ID"
+// @Success 200 {string} string "deleted"
+// @Failure 403 {string} string "access denied"
+// @Failure 404 {string} string "task not found"
+// @Router /tasks/{taskId} [delete]
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	taskID, err := strconv.ParseUint(chi.URLParam(r, "taskId"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid task id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.Delete(uint(taskID), userID); err != nil {
+		switch err.Error() {
+		case "access denied":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "task not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		default:
+			response.Error(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Update godoc
 // @Summary Update task
 // @Description Partially update a task; caller must be a board member

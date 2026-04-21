@@ -24,10 +24,22 @@ func (r *localAttachmentRepo) GetByTaskID(taskID uint) ([]*models.Attachment, er
 // localCommentRepo satisfies commentFetcher without importing the comment package.
 type localCommentRepo struct{ db *gorm.DB }
 
-func (r *localCommentRepo) GetByTaskID(taskID uint) ([]*models.Comment, error) {
-	var comments []*models.Comment
-	err := r.db.Where("task_id = ?", taskID).Order("created_at").Find(&comments).Error
-	return comments, err
+func (r *localCommentRepo) GetByTaskID(taskID uint) ([]*CommentWithAuthor, error) {
+	var rows []*CommentWithAuthor
+	err := r.db.Raw(`
+		SELECT c.id,
+		       c.author_id,
+		       c.content,
+		       c.created_at,
+		       c.updated_at,
+		       COALESCE(e.full_name, '') AS author_full_name,
+		       COALESCE(e.photo, '')     AS author_photo
+		FROM comments c
+		LEFT JOIN employees e ON e.id = c.author_id
+		WHERE c.task_id = ?
+		ORDER BY c.created_at
+	`, taskID).Scan(&rows).Error
+	return rows, err
 }
 
 func NewModule(db *gorm.DB) *Handler {

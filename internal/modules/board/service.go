@@ -2,6 +2,7 @@ package board
 
 import (
 	"errors"
+	"log"
 	"regexp"
 	"strings"
 
@@ -90,6 +91,36 @@ func (s *Service) GetMembers(boardID uint, userID int64) ([]*MemberResponse, err
 		return nil, errors.New("access denied")
 	}
 	return s.repo.GetMembersWithDetails(boardID)
+}
+
+func (s *Service) Delete(boardID uint, requesterID int64) error {
+	isOwner, err := s.repo.IsOwner(boardID, requesterID)
+	if err != nil {
+		return errors.New("board not found")
+	}
+	if !isOwner {
+		return errors.New("access denied")
+	}
+	return s.repo.Delete(boardID)
+}
+
+func (s *Service) DeleteMember(boardMemberID uint, requesterID int64) error {
+	log.Printf("board_member_id = %d, requester_id = %d", boardMemberID, requesterID)
+	member, err := s.repo.GetMemberByID(boardMemberID)
+	if err != nil {
+		return errors.New("member not found")
+	}
+
+	isOwner, err := s.repo.IsOwner(member.BoardID, requesterID)
+	if err != nil || !isOwner {
+		return errors.New("access denied")
+	}
+
+	if member.Role == "owner" {
+		return errors.New("cannot remove the board owner")
+	}
+
+	return s.repo.DeleteMember(boardMemberID)
 }
 
 func (s *Service) GetStatuses(boardID uint, userID int64) ([]*StatusResponse, error) {
