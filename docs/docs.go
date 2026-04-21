@@ -308,6 +308,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/board-members/{boardMemberId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove a member from a board by board_member_id; caller must be the board owner",
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Remove board member",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board Member ID",
+                        "name": "boardMemberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/boards": {
             "post": {
                 "security": [
@@ -579,6 +628,47 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/board.BoardResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "board not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a board by ID; caller must be the board owner",
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Delete board",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "403": {
@@ -1399,6 +1489,47 @@ const docTemplate = `{
                     }
                 }
             },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete a task by ID; caller must be a board member",
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Delete task",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "task not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "patch": {
                 "security": [
                     {
@@ -1888,6 +2019,9 @@ const docTemplate = `{
         "board.MemberResponse": {
             "type": "object",
             "properties": {
+                "board_member_id": {
+                    "type": "integer"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -1973,8 +2107,14 @@ const docTemplate = `{
         "comment.CommentResponse": {
             "type": "object",
             "properties": {
+                "author_full_name": {
+                    "type": "string"
+                },
                 "author_id": {
                     "type": "integer"
+                },
+                "author_photo": {
+                    "type": "string"
                 },
                 "content": {
                     "type": "string"
@@ -2105,8 +2245,14 @@ const docTemplate = `{
         "task.CommentInfo": {
             "type": "object",
             "properties": {
+                "author_full_name": {
+                    "type": "string"
+                },
                 "author_id": {
                     "type": "integer"
+                },
+                "author_photo": {
+                    "type": "string"
                 },
                 "content": {
                     "type": "string"
@@ -2122,9 +2268,26 @@ const docTemplate = `{
                 }
             }
         },
+        "task.EmployeeInfo": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "photo": {
+                    "type": "string"
+                }
+            }
+        },
         "task.TaskResponse": {
             "type": "object",
             "properties": {
+                "assignee": {
+                    "$ref": "#/definitions/task.EmployeeInfo"
+                },
                 "assignee_id": {
                     "type": "integer"
                 },
@@ -2158,11 +2321,17 @@ const docTemplate = `{
                 "priority_id": {
                     "type": "integer"
                 },
+                "reporter": {
+                    "$ref": "#/definitions/task.EmployeeInfo"
+                },
                 "reporter_id": {
                     "type": "integer"
                 },
                 "status_id": {
                     "type": "integer"
+                },
+                "tester": {
+                    "$ref": "#/definitions/task.EmployeeInfo"
                 },
                 "tester_id": {
                     "type": "integer"

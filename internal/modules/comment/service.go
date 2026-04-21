@@ -45,7 +45,14 @@ func (s *Service) Create(taskID uint, userID int64, req CreateCommentRequest) (*
 		return nil, err
 	}
 
-	return toResponse(c), nil
+	return &CommentResponse{
+		ID:        c.ID,
+		TaskID:    c.TaskID,
+		AuthorID:  c.AuthorID,
+		Content:   c.Content,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+	}, nil
 }
 
 func (s *Service) GetByTaskID(taskID uint, userID int64) ([]*CommentResponse, error) {
@@ -59,7 +66,7 @@ func (s *Service) GetByTaskID(taskID uint, userID int64) ([]*CommentResponse, er
 		return nil, errors.New("access denied")
 	}
 
-	comments, err := s.repo.GetByTaskID(taskID)
+	comments, err := s.repo.GetByTaskIDWithAuthor(taskID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +91,15 @@ func (s *Service) Delete(commentID uint, userID int64) error {
 	return s.repo.Delete(commentID)
 }
 
-func toResponse(c *models.Comment) *CommentResponse {
+func toResponse(c *CommentWithAuthor) *CommentResponse {
 	return &CommentResponse{
-		ID:        c.ID,
-		TaskID:    c.TaskID,
-		AuthorID:  c.AuthorID,
-		Content:   c.Content,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
+		ID:             c.ID,
+		TaskID:         c.TaskID,
+		AuthorID:       c.AuthorID,
+		AuthorFullName: c.AuthorFullName,
+		AuthorPhoto:    c.AuthorPhoto,
+		Content:        c.Content,
+		CreatedAt:      c.CreatedAt,
+		UpdatedAt:      c.UpdatedAt,
 	}
 }

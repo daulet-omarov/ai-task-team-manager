@@ -26,6 +26,12 @@ type UpdateTaskRequest struct {
 	TimeSpent    uint   `json:"time_spent"`
 }
 
+type EmployeeInfo struct {
+	ID       uint   `json:"id"`
+	FullName string `json:"full_name"`
+	Photo    string `json:"photo"`
+}
+
 type AttachmentInfo struct {
 	ID       uint   `json:"id"`
 	FileName string `json:"file_name"`
@@ -34,11 +40,13 @@ type AttachmentInfo struct {
 }
 
 type CommentInfo struct {
-	ID        uint      `json:"id"`
-	AuthorID  uint      `json:"author_id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID             uint      `json:"id"`
+	AuthorID       uint      `json:"author_id"`
+	AuthorFullName string    `json:"author_full_name"`
+	AuthorPhoto    string    `json:"author_photo"`
+	Content        string    `json:"content"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 type TaskResponse struct {
@@ -50,8 +58,11 @@ type TaskResponse struct {
 	PriorityID   uint             `json:"priority_id"`
 	DifficultyID *uint            `json:"difficulty_id"`
 	AssigneeID   uint             `json:"assignee_id"`
+	Assignee     *EmployeeInfo    `json:"assignee"`
 	TesterID     uint             `json:"tester_id"`
+	Tester       *EmployeeInfo    `json:"tester"`
 	ReporterID   uint             `json:"reporter_id"`
+	Reporter     *EmployeeInfo    `json:"reporter"`
 	TimeSpent    uint             `json:"time_spent"`
 	Attachments  []AttachmentInfo `json:"attachments"`
 	Comments     []CommentInfo    `json:"comments"`
