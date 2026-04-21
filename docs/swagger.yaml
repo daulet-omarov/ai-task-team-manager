@@ -317,7 +317,7 @@ definitions:
       title:
         type: string
     type: object
-host: 192.168.100.32:8080
+host: localhost:7777
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
