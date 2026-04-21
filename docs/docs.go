@@ -2223,7 +2223,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "192.168.100.32:8080",
+	Host:             "localhost:7777",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "AI Task Team Manager API",
