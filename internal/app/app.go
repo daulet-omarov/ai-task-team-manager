@@ -72,7 +72,7 @@ func New() *App {
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	server := &http.Server{
-		Addr:    cfg.AppUrl,
+		Addr:    "0.0.0.0:" + cfg.AppPort,
 		Handler: r,
 	}
 
