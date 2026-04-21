@@ -342,7 +342,7 @@ definitions:
       title:
         type: string
     type: object
-host: localhost:7777
+host: ai-task-team-manager.onrender.com
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
