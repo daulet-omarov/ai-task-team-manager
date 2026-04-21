@@ -30,9 +30,7 @@ func SetupRouter(
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{
-			"http://192.168.100.23:5173",
-		},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{
 			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
 		},
@@ -43,7 +41,7 @@ func SetupRouter(
 			"X-CSRF-Token",
 		},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
+		AllowCredentials: false,
 		MaxAge:           300,
 	}))
 
