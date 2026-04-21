@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:7777",
+    "host": "ai-task-team-manager.onrender.com",
     "basePath": "/",
     "paths": {
         "/attachments/{attachmentId}": {
