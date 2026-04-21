@@ -12,5 +12,6 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Get("/boards/{boardId}/tasks", h.GetByBoardID)
 		r.Get("/tasks/{taskId}", h.GetByID)
 		r.Patch("/tasks/{taskId}", h.Update)
+		r.Delete("/tasks/{taskId}", h.Delete)
 	})
 }

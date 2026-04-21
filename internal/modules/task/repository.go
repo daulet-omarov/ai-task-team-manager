@@ -20,24 +20,42 @@ func (r *Repository) GetStatusIDByCode(code string) (uint, error) {
 }
 
 func (r *Repository) Create(t *models.Task) error {
-	return r.db.Create(t).Error
+	cols := []string{"BoardID", "Title", "Description", "StatusID", "ReporterID", "TimeSpent"}
+	if t.PriorityID != 0 {
+		cols = append(cols, "PriorityID")
+	}
+	if t.DeveloperID != 0 {
+		cols = append(cols, "DeveloperID")
+	}
+	if t.TesterID != 0 {
+		cols = append(cols, "TesterID")
+	}
+	if t.DifficultyID != nil {
+		cols = append(cols, "DifficultyID")
+	}
+	return r.db.Select(cols).Create(t).Error
 }
 
 func (r *Repository) GetByID(id uint) (*models.Task, error) {
 	var t models.Task
-	err := r.db.First(&t, id).Error
+	err := r.db.Preload("Developer").Preload("Tester").Preload("Reporter").First(&t, id).Error
 	if err != nil {
 		return nil, err
 	}
 	return &t, nil
 }
 
-func (r *Repository) Update(t *models.Task) error {
-	return r.db.Save(t).Error
+func (r *Repository) Update(id uint, fields map[string]interface{}) error {
+	return r.db.Model(&models.Task{ID: id}).Updates(fields).Error
+}
+
+func (r *Repository) Delete(id uint) error {
+	return r.db.Delete(&models.Task{}, id).Error
 }
 
 func (r *Repository) GetByBoardID(boardID uint) ([]*models.Task, error) {
 	var tasks []*models.Task
-	err := r.db.Where("board_id = ?", boardID).Order("created_at").Find(&tasks).Error
+	err := r.db.Preload("Developer").Preload("Tester").Preload("Reporter").
+		Where("board_id = ?", boardID).Order("created_at").Find(&tasks).Error
 	return tasks, err
 }

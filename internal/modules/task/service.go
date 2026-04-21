@@ -3,6 +3,7 @@ package task
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/uploader"
@@ -21,8 +22,18 @@ type attachmentFetcher interface {
 	GetByTaskID(taskID uint) ([]*models.Attachment, error)
 }
 
+type CommentWithAuthor struct {
+	ID             uint
+	AuthorID       uint
+	AuthorFullName string
+	AuthorPhoto    string
+	Content        string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type commentFetcher interface {
-	GetByTaskID(taskID uint) ([]*models.Comment, error)
+	GetByTaskID(taskID uint) ([]*CommentWithAuthor, error)
 }
 
 type Service struct {
@@ -112,6 +123,20 @@ func (s *Service) GetByID(id uint, userID int64, r *http.Request) (*TaskResponse
 	return resp, nil
 }
 
+func (s *Service) Delete(id uint, userID int64) error {
+	t, err := s.repo.GetByID(id)
+	if err != nil {
+		return errors.New("task not found")
+	}
+
+	isMember, err := s.boardRepo.IsMember(t.BoardID, userID)
+	if err != nil || !isMember {
+		return errors.New("access denied")
+	}
+
+	return s.repo.Delete(id)
+}
+
 func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.Request) (*TaskResponse, error) {
 	t, err := s.repo.GetByID(id)
 	if err != nil {
@@ -123,32 +148,39 @@ func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.R
 		return nil, errors.New("access denied")
 	}
 
+	updates := map[string]interface{}{}
 	if req.Title != "" {
-		t.Title = req.Title
+		updates["title"] = req.Title
 	}
 	if req.Description != "" {
-		t.Description = req.Description
+		updates["description"] = req.Description
 	}
 	if req.StatusID != 0 {
-		t.StatusID = req.StatusID
+		updates["status_id"] = req.StatusID
 	}
 	if req.PriorityID != 0 {
-		t.PriorityID = req.PriorityID
+		updates["priority_id"] = req.PriorityID
 	}
 	if req.AssigneeID != 0 {
-		t.DeveloperID = req.AssigneeID
+		updates["developer_id"] = req.AssigneeID
 	}
 	if req.TesterID != 0 {
-		t.TesterID = req.TesterID
+		updates["tester_id"] = req.TesterID
 	}
 	if req.DifficultyID != nil {
-		t.DifficultyID = req.DifficultyID
+		updates["difficulty_id"] = *req.DifficultyID
 	}
 	if req.TimeSpent != 0 {
-		t.TimeSpent = req.TimeSpent
+		updates["time_spent"] = req.TimeSpent
 	}
 
-	if err := s.repo.Update(t); err != nil {
+	if err := s.repo.Update(t.ID, updates); err != nil {
+		return nil, err
+	}
+
+	// Reload to get fresh associations after the update.
+	t, err = s.repo.GetByID(t.ID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -204,12 +236,25 @@ func (s *Service) loadComments(resp *TaskResponse, taskID uint) {
 	}
 	for _, c := range comments {
 		resp.Comments = append(resp.Comments, CommentInfo{
-			ID:        c.ID,
-			AuthorID:  c.AuthorID,
-			Content:   c.Content,
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
+			ID:             c.ID,
+			AuthorID:       c.AuthorID,
+			AuthorFullName: c.AuthorFullName,
+			AuthorPhoto:    c.AuthorPhoto,
+			Content:        c.Content,
+			CreatedAt:      c.CreatedAt,
+			UpdatedAt:      c.UpdatedAt,
 		})
+	}
+}
+
+func employeeInfo(e models.Employee) *EmployeeInfo {
+	if e.ID == 0 {
+		return nil
+	}
+	return &EmployeeInfo{
+		ID:       e.ID,
+		FullName: e.FullName,
+		Photo:    e.Photo,
 	}
 }
 
@@ -223,8 +268,11 @@ func toResponse(t *models.Task) *TaskResponse {
 		PriorityID:   t.PriorityID,
 		DifficultyID: t.DifficultyID,
 		AssigneeID:   t.DeveloperID,
+		Assignee:     employeeInfo(t.Developer),
 		TesterID:     t.TesterID,
+		Tester:       employeeInfo(t.Tester),
 		ReporterID:   t.ReporterID,
+		Reporter:     employeeInfo(t.Reporter),
 		TimeSpent:    t.TimeSpent,
 		Attachments:  []AttachmentInfo{},
 		Comments:     []CommentInfo{},

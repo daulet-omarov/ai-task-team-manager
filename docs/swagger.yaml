@@ -106,6 +106,8 @@ definitions:
     type: object
   board.MemberResponse:
     properties:
+      board_member_id:
+        type: integer
       email:
         type: string
       full_name:
@@ -162,8 +164,12 @@ definitions:
     type: object
   comment.CommentResponse:
     properties:
+      author_full_name:
+        type: string
       author_id:
         type: integer
+      author_photo:
+        type: string
       content:
         type: string
       created_at:
@@ -248,8 +254,12 @@ definitions:
     type: object
   task.CommentInfo:
     properties:
+      author_full_name:
+        type: string
       author_id:
         type: integer
+      author_photo:
+        type: string
       content:
         type: string
       created_at:
@@ -259,8 +269,19 @@ definitions:
       updated_at:
         type: string
     type: object
+  task.EmployeeInfo:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: integer
+      photo:
+        type: string
+    type: object
   task.TaskResponse:
     properties:
+      assignee:
+        $ref: '#/definitions/task.EmployeeInfo'
       assignee_id:
         type: integer
       attachments:
@@ -283,10 +304,14 @@ definitions:
         type: integer
       priority_id:
         type: integer
+      reporter:
+        $ref: '#/definitions/task.EmployeeInfo'
       reporter_id:
         type: integer
       status_id:
         type: integer
+      tester:
+        $ref: '#/definitions/task.EmployeeInfo'
       tester_id:
         type: integer
       time_spent:
@@ -514,6 +539,38 @@ paths:
       summary: Verify email address
       tags:
       - Auth
+  /board-members/{boardMemberId}:
+    delete:
+      description: Remove a member from a board by board_member_id; caller must be
+        the board owner
+      parameters:
+      - description: Board Member ID
+        in: path
+        name: boardMemberId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: member not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Remove board member
+      tags:
+      - Board
   /boards:
     post:
       consumes:
@@ -671,6 +728,32 @@ paths:
       tags:
       - Task
   /boards/{id}:
+    delete:
+      description: Delete a board by ID; caller must be the board owner
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: board not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete board
+      tags:
+      - Board
     get:
       description: Get board by ID (user must be a member)
       parameters:
@@ -1183,6 +1266,32 @@ paths:
       tags:
       - Board
   /tasks/{taskId}:
+    delete:
+      description: Delete a task by ID; caller must be a board member
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: deleted
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: task not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete task
+      tags:
+      - Task
     get:
       description: Get task by ID; caller must be a board member
       parameters:

@@ -100,6 +100,40 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, board)
 }
 
+// Delete godoc
+// @Summary Delete board
+// @Description Delete a board by ID; caller must be the board owner
+// @Tags Board
+// @Security BearerAuth
+// @Param id path int true "Board ID"
+// @Success 200 {string} string "deleted"
+// @Failure 403 {string} string "access denied"
+// @Failure 404 {string} string "board not found"
+// @Router /boards/{id} [delete]
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.Delete(uint(id), userID); err != nil {
+		switch err.Error() {
+		case "access denied":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "board not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		default:
+			response.Error(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // GetStatuses godoc
 // @Summary Get board statuses
 // @Description Returns statuses of a board ordered by position; caller must be a member
@@ -308,4 +342,39 @@ func (h *Handler) GetMembers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, members)
+}
+
+// DeleteMember godoc
+// @Summary Remove board member
+// @Description Remove a member from a board by board_member_id; caller must be the board owner
+// @Tags Board
+// @Security BearerAuth
+// @Param boardMemberId path int true "Board Member ID"
+// @Success 200 {string} string "deleted"
+// @Failure 400 {string} string "bad request"
+// @Failure 403 {string} string "access denied"
+// @Failure 404 {string} string "member not found"
+// @Router /board-members/{boardMemberId} [delete]
+func (h *Handler) DeleteMember(w http.ResponseWriter, r *http.Request) {
+	boardMemberID, err := strconv.ParseUint(chi.URLParam(r, "boardMemberId"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board member id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.DeleteMember(uint(boardMemberID), userID); err != nil {
+		switch err.Error() {
+		case "access denied":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "member not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		default:
+			response.Error(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
