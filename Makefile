@@ -3,20 +3,20 @@ swagger:
 
 migrate-up:
 	migrate -path migrations \
-    -database "postgres://postgres:postgres@localhost:5432/myapp?sslmode=disable" \
+    -database "postgres://postgres:postgres@192.168.100.32:5433/myapp?sslmode=disable" \
     up
 
 migrate-down:
 	migrate -path migrations \
-    -database "postgres://postgres:postgres@localhost:5432/myapp?sslmode=disable" \
+    -database "postgres://postgres:postgres@192.168.100.32:5433/myapp?sslmode=disable" \
     down
 
 migrate-fresh:
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/myapp?sslmode=disable" drop -f
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/myapp?sslmode=disable" up
+	migrate -path migrations -database "postgres://postgres:postgres@192.168.100.32:5433/myapp?sslmode=disable" drop -f
+	migrate -path migrations -database "postgres://postgres:postgres@192.168.100.32:5433/myapp?sslmode=disable" up
 
 migration:
 	migrate create -ext sql -dir migrations -seq $(name)
 
 migrate-reset:
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/myapp?sslmode=disable" drop -f
+	migrate -path migrations -database "postgres://postgres:postgres@192.168.100.32:5433/myapp?sslmode=disable" drop -f

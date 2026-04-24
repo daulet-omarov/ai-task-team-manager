@@ -1,11 +1,10 @@
 package notion
 
 import (
-	"net/http"
-
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
+	"net/http"
 )
 
 type Handler struct {

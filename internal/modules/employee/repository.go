@@ -30,6 +30,15 @@ func (r *Repository) GetByID(id uint) (*models.Employee, error) {
 	return &e, nil
 }
 
+func (r *Repository) GetByEmail(email string) (*models.Employee, error) {
+	var e models.Employee
+	err := r.db.Where("email = ?", email).First(&e).Error
+	if err != nil {
+		return nil, err
+	}
+	return &e, nil
+}
+
 func (r *Repository) GetByUserID(userID uint) (*models.Employee, error) {
 	var e models.Employee
 	err := r.db.

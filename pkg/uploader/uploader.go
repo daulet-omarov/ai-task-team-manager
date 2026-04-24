@@ -191,6 +191,64 @@ func SaveFile(fh *multipart.FileHeader) (string, error) {
 	return "/uploads/" + filename, nil
 }
 
+// SaveAny saves any file (no MIME restriction) to UploadsDir, up to 200 MB.
+// Useful for chat attachments: voice, audio, documents, etc.
+func SaveAny(fh *multipart.FileHeader) (path string, mimeType string, err error) {
+	if fh == nil {
+		return "", "", nil
+	}
+	if fh.Size > MaxAttachmentSize {
+		return "", "", errors.New("file too large (max 200 MB)")
+	}
+
+	file, err := fh.Open()
+	if err != nil {
+		return "", "", errors.New("cannot open uploaded file")
+	}
+	defer file.Close()
+
+	buf := make([]byte, 512)
+	n, err := file.Read(buf)
+	if err != nil && err != io.EOF {
+		return "", "", errors.New("cannot read file")
+	}
+	mimeType = http.DetectContentType(buf[:n])
+	if ctHeader := fh.Header.Get("Content-Type"); ctHeader != "" && mimeType == "application/octet-stream" {
+		mimeType = ctHeader
+	}
+
+	ext := strings.ToLower(filepath.Ext(fh.Filename))
+	if ext == "" {
+		ext = ".bin"
+	}
+
+	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
+		return "", "", errors.New("cannot create uploads directory")
+	}
+
+	randBytes := make([]byte, 16)
+	if _, err := rand.Read(randBytes); err != nil {
+		return "", "", errors.New("failed to generate filename")
+	}
+	filename := hex.EncodeToString(randBytes) + ext
+	destPath := filepath.Join(UploadsDir, filename)
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return "", "", errors.New("failed to save file")
+	}
+	defer dst.Close()
+
+	if _, err := dst.Write(buf[:n]); err != nil {
+		return "", "", errors.New("failed to write file")
+	}
+	if _, err := io.Copy(dst, file); err != nil {
+		return "", "", errors.New("failed to write file")
+	}
+
+	return "/uploads/" + filename, mimeType, nil
+}
+
 // SaveFromURL downloads a remote file and saves it to UploadsDir.
 // originalName is used only to preserve the file extension; the stored filename is randomised.
 // Returns the local path like "/uploads/abc123.pdf".

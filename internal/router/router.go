@@ -7,6 +7,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/chat"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
@@ -27,13 +28,15 @@ func SetupRouter(
 	commentHandler *comment.Handler,
 	attachmentHandler *attachment.Handler,
 	notionHandler *notion.Handler,
+	chatHandler *chat.Handler,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{
-			"http://10.10.72.55:5173",
+			"http://192.168.100.23:5173",
+			"https://192.168.100.23:5173",
 		},
 		AllowedMethods: []string{
 			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
@@ -60,6 +63,7 @@ func SetupRouter(
 	comment.RegisterRoutes(r, commentHandler)
 	attachment.RegisterRoutes(r, attachmentHandler)
 	notion.RegisterRoutes(r, notionHandler)
+	chat.RegisterRoutes(r, chatHandler)
 
 	// Serve uploaded files as static assets: GET /uploads/<filename>
 	fileServer := http.FileServer(http.Dir("./uploads"))

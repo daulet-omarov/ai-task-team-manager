@@ -11,6 +11,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/chat"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
@@ -67,9 +68,10 @@ func New() *App {
 	commentHandler := comment.NewModule(db)
 	attachmentHandler := attachment.NewModule(db)
 	notionHandler := notion.NewModule(db)
+	chatHandler := chat.NewModule(db)
 
 	// router
-	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler)
+	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler)
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 

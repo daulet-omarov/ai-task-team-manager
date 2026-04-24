@@ -162,6 +162,102 @@ definitions:
       title:
         type: string
     type: object
+  chat.AttachmentResponse:
+    properties:
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      mime_type:
+        type: string
+      url:
+        type: string
+    type: object
+  chat.AuthorInfo:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: integer
+      photo:
+        type: string
+    type: object
+  chat.CreatePollRequest:
+    properties:
+      options:
+        items:
+          type: string
+        minItems: 2
+        type: array
+      question:
+        type: string
+    required:
+    - options
+    - question
+    type: object
+  chat.MessageResponse:
+    properties:
+      attachments:
+        items:
+          $ref: '#/definitions/chat.AttachmentResponse'
+        type: array
+      author:
+        $ref: '#/definitions/chat.AuthorInfo'
+      board_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      poll:
+        $ref: '#/definitions/chat.PollResponse'
+      reply_to:
+        $ref: '#/definitions/chat.ReplyToResponse'
+      text:
+        type: string
+    type: object
+  chat.PollOptionResponse:
+    properties:
+      id:
+        type: integer
+      text:
+        type: string
+      vote_count:
+        type: integer
+      voters:
+        items:
+          $ref: '#/definitions/chat.AuthorInfo'
+        type: array
+    type: object
+  chat.PollResponse:
+    properties:
+      id:
+        type: integer
+      options:
+        items:
+          $ref: '#/definitions/chat.PollOptionResponse'
+        type: array
+      question:
+        type: string
+    type: object
+  chat.ReplyToResponse:
+    properties:
+      author:
+        $ref: '#/definitions/chat.AuthorInfo'
+      id:
+        type: integer
+      text:
+        type: string
+    type: object
+  chat.VoteRequest:
+    properties:
+      option_id:
+        type: integer
+    required:
+    - option_id
+    type: object
   comment.CommentResponse:
     properties:
       author_full_name:
@@ -390,7 +486,7 @@ definitions:
       title:
         type: string
     type: object
-host: localhost:7777
+host: 192.168.100.32:8080
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -647,6 +743,155 @@ paths:
       summary: Create board
       tags:
       - Board
+  /boards/{boardId}/chat:
+    get:
+      description: Returns paginated messages for a board (newest first). Members
+        only.
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Page size (default 50, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/chat.MessageResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get board chat messages
+      tags:
+      - Chat
+    post:
+      consumes:
+      - multipart/form-data
+      description: Send a text / file / voice / photo / video message. Use multipart/form-data.
+        Field "files" accepts multiple files.
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Message text
+        in: formData
+        name: text
+        type: string
+      - description: ID of the message being replied to
+        in: formData
+        name: reply_to_id
+        type: integer
+      - description: Attachments (repeat for multiple)
+        in: formData
+        name: files
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/chat.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a chat message
+      tags:
+      - Chat
+  /boards/{boardId}/chat/{msgId}:
+    delete:
+      description: Deletes the message. Only the author can delete their own message.
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Message ID
+        in: path
+        name: msgId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete a chat message
+      tags:
+      - Chat
+  /boards/{boardId}/chat/polls:
+    post:
+      consumes:
+      - application/json
+      description: Creates a poll in the board chat. Members only.
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Poll data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat.CreatePollRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/chat.MessageResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a poll message
+      tags:
+      - Chat
+  /boards/{boardId}/chat/polls/vote:
+    post:
+      consumes:
+      - application/json
+      description: Adds a vote if not yet voted; removes it if already voted.
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Option to vote for
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat.VoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat.PollResponse'
+      security:
+      - BearerAuth: []
+      summary: Vote on a poll option (toggle)
+      tags:
+      - Chat
   /boards/{boardId}/invite:
     post:
       consumes:

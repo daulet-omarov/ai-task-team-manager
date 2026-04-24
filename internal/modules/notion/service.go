@@ -7,6 +7,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/uploader"
 	"go.uber.org/zap"
@@ -20,10 +21,11 @@ type Service struct {
 	boardRepo      *board.Repository
 	taskRepo       *task.Repository
 	attachmentRepo attachmentCreator
+	employeeRepo   *employee.Repository
 }
 
-func NewService(boardRepo *board.Repository, taskRepo *task.Repository, attachmentRepo attachmentCreator) *Service {
-	return &Service{boardRepo: boardRepo, taskRepo: taskRepo, attachmentRepo: attachmentRepo}
+func NewService(boardRepo *board.Repository, taskRepo *task.Repository, attachmentRepo attachmentCreator, employeeRepo *employee.Repository) *Service {
+	return &Service{boardRepo: boardRepo, taskRepo: taskRepo, attachmentRepo: attachmentRepo, employeeRepo: employeeRepo}
 }
 
 func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error) {
@@ -36,7 +38,7 @@ func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error)
 
 	client := newClient(req.Token)
 
-	dbTitle, err := client.getDatabaseTitle(req.DatabaseID)
+	dbTitle, schemaStatuses, err := client.getDatabase(req.DatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("notion API error: %w", err)
 	}
@@ -54,9 +56,6 @@ func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error)
 			return nil, err
 		}
 		if err := s.boardRepo.AddMember(b.ID, userID, "owner"); err != nil {
-			return nil, err
-		}
-		if err := s.boardRepo.AddDefaultStatuses(b.ID); err != nil {
 			return nil, err
 		}
 		boardID = b.ID
@@ -84,6 +83,48 @@ func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error)
 		}
 		statusCache[label] = sr.StatusID
 		return sr.StatusID, nil
+	}
+
+	// Pre-create all statuses found in the Notion database schema so that
+	// statuses with no tasks are still present on the board.
+	for _, label := range schemaStatuses {
+		if _, err := statusID(label); err != nil {
+			logger.Log.Warn("notion import: failed to pre-create schema status",
+				zap.String("label", label),
+				zap.Error(err),
+			)
+		}
+	}
+
+	// developerID resolves an email to an employee ID and ensures the employee
+	// is a member of the board (adds them as "member" if they are not).
+	// Results are cached; unknown emails return 0 (no assignee).
+	developerCache := map[string]uint{}
+	developerID := func(email string) uint {
+		if email == "" {
+			return 0
+		}
+		if id, ok := developerCache[email]; ok {
+			return id
+		}
+		emp, err := s.employeeRepo.GetByEmail(email)
+		if err != nil {
+			// Employee not found or DB error — skip assignment silently.
+			developerCache[email] = 0
+			return 0
+		}
+		// Ensure the employee's user account is a board member.
+		isMember, err := s.boardRepo.IsMember(boardID, int64(emp.UserID))
+		if err == nil && !isMember {
+			if addErr := s.boardRepo.AddMember(boardID, int64(emp.UserID), "member"); addErr != nil {
+				logger.Log.Warn("notion import: failed to add assignee as board member",
+					zap.String("email", email),
+					zap.Error(addErr),
+				)
+			}
+		}
+		developerCache[email] = emp.ID
+		return emp.ID
 	}
 
 	pages, err := client.queryDatabase(req.DatabaseID)
@@ -118,12 +159,21 @@ func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error)
 			continue
 		}
 
+		desc, err := client.getPageText(p.ID)
+		if err != nil {
+			logger.Log.Warn("notion import: failed to fetch page content",
+				zap.String("page_id", p.ID),
+				zap.Error(err),
+			)
+		}
+
 		t := &models.Task{
 			BoardID:     boardID,
 			Title:       title,
-			Description: extractDescription(p),
+			Description: desc,
 			StatusID:    sid,
 			ReporterID:  uint(userID),
+			DeveloperID: developerID(extractAssigneeEmail(p)),
 		}
 
 		if err := s.taskRepo.Create(t); err != nil {
