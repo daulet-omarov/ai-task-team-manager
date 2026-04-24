@@ -189,6 +189,24 @@ definitions:
     required:
     - content
     type: object
+  employee.ActivitiesResponse:
+    properties:
+      activities:
+        items:
+          $ref: '#/definitions/employee.DailyContribution'
+        type: array
+      total_active_days:
+        type: integer
+      total_contributions:
+        type: integer
+    type: object
+  employee.DailyContribution:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+    type: object
   employee.EmployeeResponse:
     properties:
       birthday:
@@ -1053,6 +1071,26 @@ paths:
       security:
       - BearerAuth: []
       summary: Get my employee profile
+      tags:
+      - Employee
+  /employees/me/activities:
+    get:
+      description: Returns daily contribution counts (tasks created + comments), total
+        contributions, and total active days for the authenticated employee.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/employee.ActivitiesResponse'
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get employee activity contributions
       tags:
       - Employee
   /invites:
