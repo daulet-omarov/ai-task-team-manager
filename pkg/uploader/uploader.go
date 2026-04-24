@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -188,6 +189,50 @@ func SaveFile(fh *multipart.FileHeader) (string, error) {
 	}
 
 	return "/uploads/" + filename, nil
+}
+
+// SaveFromURL downloads a remote file and saves it to UploadsDir.
+// originalName is used only to preserve the file extension; the stored filename is randomised.
+// Returns the local path like "/uploads/abc123.pdf".
+func SaveFromURL(remoteURL, originalName string) (string, int64, error) {
+	resp, err := http.Get(remoteURL) //nolint:gosec
+	if err != nil {
+		return "", 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return "", 0, fmt.Errorf("remote file responded %d", resp.StatusCode)
+	}
+
+	ext := strings.ToLower(filepath.Ext(originalName))
+	if ext == "" {
+		ext = ".bin"
+	}
+
+	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
+		return "", 0, errors.New("cannot create uploads directory")
+	}
+
+	randBytes := make([]byte, 16)
+	if _, err := rand.Read(randBytes); err != nil {
+		return "", 0, errors.New("failed to generate filename")
+	}
+	filename := hex.EncodeToString(randBytes) + ext
+	destPath := filepath.Join(UploadsDir, filename)
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		return "", 0, errors.New("failed to create file")
+	}
+	defer dst.Close()
+
+	written, err := io.Copy(dst, resp.Body)
+	if err != nil {
+		return "", 0, errors.New("failed to write file")
+	}
+
+	return "/uploads/" + filename, written, nil
 }
 
 // FullURL constructs an absolute URL from the incoming request and a path like "/uploads/foo.png".

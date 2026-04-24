@@ -1268,6 +1268,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/notion/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches all pages from a Notion database and imports them as tasks. When board_id is 0 a new board is created using the database title.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notion"
+                ],
+                "summary": "Import tasks from Notion",
+                "parameters": [
+                    {
+                        "description": "Notion import request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportResult"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/statuses": {
             "post": {
                 "security": [
@@ -2185,6 +2236,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/employee.DailyContribution"
                     }
                 },
+                "current_streak": {
+                    "type": "integer"
+                },
+                "max_streak": {
+                    "type": "integer"
+                },
                 "total_active_days": {
                     "type": "integer"
                 },
@@ -2281,6 +2338,44 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "notion.ImportRequest": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "description": "BoardID is optional; when 0 a new board is created from the Notion database title.",
+                    "type": "integer"
+                },
+                "database_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "notion.ImportResult": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "type": "integer"
+                },
+                "board_name": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "tasks_created": {
+                    "type": "integer"
                 }
             }
         },
@@ -2451,7 +2546,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "ai-task-team-manager.onrender.com",
+	Host:             "localhost:7777",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "AI Task Team Manager API",

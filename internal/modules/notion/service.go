@@ -1,0 +1,167 @@
+package notion
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
+	"github.com/daulet-omarov/ai-task-team-manager/pkg/uploader"
+	"go.uber.org/zap"
+)
+
+type attachmentCreator interface {
+	Create(a *models.Attachment) error
+}
+
+type Service struct {
+	boardRepo      *board.Repository
+	taskRepo       *task.Repository
+	attachmentRepo attachmentCreator
+}
+
+func NewService(boardRepo *board.Repository, taskRepo *task.Repository, attachmentRepo attachmentCreator) *Service {
+	return &Service{boardRepo: boardRepo, taskRepo: taskRepo, attachmentRepo: attachmentRepo}
+}
+
+func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error) {
+	if req.Token == "" {
+		return nil, errors.New("notion token is required")
+	}
+	if req.DatabaseID == "" {
+		return nil, errors.New("database_id is required")
+	}
+
+	client := newClient(req.Token)
+
+	dbTitle, err := client.getDatabaseTitle(req.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("notion API error: %w", err)
+	}
+	if dbTitle == "" {
+		dbTitle = "Imported from Notion"
+	}
+
+	boardID := req.BoardID
+	if boardID == 0 {
+		b := &models.Board{
+			Name:    dbTitle,
+			OwnerID: userID,
+		}
+		if err := s.boardRepo.Create(b); err != nil {
+			return nil, err
+		}
+		if err := s.boardRepo.AddMember(b.ID, userID, "owner"); err != nil {
+			return nil, err
+		}
+		if err := s.boardRepo.AddDefaultStatuses(b.ID); err != nil {
+			return nil, err
+		}
+		boardID = b.ID
+	} else {
+		isMember, err := s.boardRepo.IsMember(boardID, userID)
+		if err != nil || !isMember {
+			return nil, errors.New("access denied: not a board member")
+		}
+	}
+
+	// statusID resolves a Notion status label to a DB status ID.
+	// Results are cached so each unique label hits the DB only once.
+	statusCache := map[string]uint{}
+	statusID := func(label string) (uint, error) {
+		if label == "" {
+			label = "Not started"
+		}
+		if id, ok := statusCache[label]; ok {
+			return id, nil
+		}
+		code := codeFromName(label)
+		sr, err := s.boardRepo.UpsertStatus(boardID, label, code, "")
+		if err != nil {
+			return 0, err
+		}
+		statusCache[label] = sr.StatusID
+		return sr.StatusID, nil
+	}
+
+	pages, err := client.queryDatabase(req.DatabaseID)
+	if err != nil {
+		return nil, fmt.Errorf("notion query error: %w", err)
+	}
+
+	result := &ImportResult{
+		BoardID:   boardID,
+		BoardName: dbTitle,
+		Errors:    []string{},
+	}
+
+	for _, p := range pages {
+		title := extractTitle(p)
+		if title == "" {
+			result.Skipped++
+			continue
+		}
+
+		rawStatus := extractRawStatus(p)
+		logger.Log.Info("notion import: page status",
+			zap.String("page_id", p.ID),
+			zap.String("title", title),
+			zap.String("raw_status", rawStatus),
+			zap.String("prop_types", propTypes(p)),
+		)
+
+		sid, err := statusID(rawStatus)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("page %s status: %v", p.ID, err))
+			continue
+		}
+
+		t := &models.Task{
+			BoardID:     boardID,
+			Title:       title,
+			Description: extractDescription(p),
+			StatusID:    sid,
+			ReporterID:  uint(userID),
+		}
+
+		if err := s.taskRepo.Create(t); err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("page %s: %v", p.ID, err))
+			continue
+		}
+		result.TasksCreated++
+
+		for _, f := range extractFiles(p) {
+			path, size, err := uploader.SaveFromURL(f.URL, f.Name)
+			if err != nil {
+				errMsg := fmt.Sprintf("page %s file %q: download failed: %v", p.ID, f.Name, err)
+				logger.Log.Error("notion import: file download failed",
+					zap.String("page_id", p.ID),
+					zap.String("file_name", f.Name),
+					zap.String("url", f.URL),
+					zap.Error(err),
+				)
+				result.Errors = append(result.Errors, errMsg)
+				continue
+			}
+			if err := s.attachmentRepo.Create(&models.Attachment{
+				TaskID:   t.ID,
+				FilePath: path,
+				FileName: f.Name,
+				FileSize: int(size),
+			}); err != nil {
+				errMsg := fmt.Sprintf("page %s file %q: save to db failed: %v", p.ID, f.Name, err)
+				logger.Log.Error("notion import: attachment create failed",
+					zap.String("page_id", p.ID),
+					zap.String("file_name", f.Name),
+					zap.String("path", path),
+					zap.Error(err),
+				)
+				result.Errors = append(result.Errors, errMsg)
+			}
+		}
+	}
+
+	return result, nil
+}

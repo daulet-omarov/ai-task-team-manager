@@ -195,6 +195,10 @@ definitions:
         items:
           $ref: '#/definitions/employee.DailyContribution'
         type: array
+      current_streak:
+        type: integer
+      max_streak:
+        type: integer
       total_active_days:
         type: integer
       total_contributions:
@@ -258,6 +262,32 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  notion.ImportRequest:
+    properties:
+      board_id:
+        description: BoardID is optional; when 0 a new board is created from the Notion
+          database title.
+        type: integer
+      database_id:
+        type: string
+      token:
+        type: string
+    type: object
+  notion.ImportResult:
+    properties:
+      board_id:
+        type: integer
+      board_name:
+        type: string
+      errors:
+        items:
+          type: string
+        type: array
+      skipped:
+        type: integer
+      tasks_created:
+        type: integer
     type: object
   task.AttachmentInfo:
     properties:
@@ -360,7 +390,7 @@ definitions:
       title:
         type: string
     type: object
-host: ai-task-team-manager.onrender.com
+host: localhost:7777
 info:
   contact: {}
   description: AI Task Team Manager API is a backend service designed to manage team
@@ -1168,6 +1198,39 @@ paths:
       summary: Reject invitation
       tags:
       - Invite
+  /notion/import:
+    post:
+      consumes:
+      - application/json
+      description: Fetches all pages from a Notion database and imports them as tasks.
+        When board_id is 0 a new board is created using the database title.
+      parameters:
+      - description: Notion import request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/notion.ImportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notion.ImportResult'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Import tasks from Notion
+      tags:
+      - Notion
   /statuses:
     post:
       consumes:

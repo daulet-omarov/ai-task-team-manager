@@ -7,7 +7,7 @@ import (
 // @title AI Task Team Manager API
 // @version 1.0
 // @description AI Task Team Manager API is a backend service designed to manage team tasks using artificial intelligence.
-// @host ai-task-team-manager.onrender.com
+// @host localhost:7777
 // @BasePath /
 
 // @securityDefinitions.apikey BearerAuth

@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "ai-task-team-manager.onrender.com",
+    "host": "localhost:7777",
     "basePath": "/",
     "paths": {
         "/attachments/{attachmentId}": {
@@ -1262,6 +1262,57 @@
                 }
             }
         },
+        "/notion/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches all pages from a Notion database and imports them as tasks. When board_id is 0 a new board is created using the database title.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notion"
+                ],
+                "summary": "Import tasks from Notion",
+                "parameters": [
+                    {
+                        "description": "Notion import request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportResult"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/statuses": {
             "post": {
                 "security": [
@@ -2179,6 +2230,12 @@
                         "$ref": "#/definitions/employee.DailyContribution"
                     }
                 },
+                "current_streak": {
+                    "type": "integer"
+                },
+                "max_streak": {
+                    "type": "integer"
+                },
                 "total_active_days": {
                     "type": "integer"
                 },
@@ -2275,6 +2332,44 @@
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "notion.ImportRequest": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "description": "BoardID is optional; when 0 a new board is created from the Notion database title.",
+                    "type": "integer"
+                },
+                "database_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "notion.ImportResult": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "type": "integer"
+                },
+                "board_name": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "tasks_created": {
+                    "type": "integer"
                 }
             }
         },
