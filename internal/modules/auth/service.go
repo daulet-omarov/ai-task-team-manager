@@ -143,8 +143,9 @@ func (s *Service) ForgotPassword(email string) error {
 		return err
 	}
 
-	resetURL := s.appBaseURL + "/auth/reset-password?token=" + token
-	go s.mailer.SendPasswordResetEmail(user.Email, resetURL)
+	//resetURL := s.appBaseURL + "/auth/reset-password?token=" + token
+	frontURL := "http://192.168.100.23:5173/reset-password?token=" + token
+	go s.mailer.SendPasswordResetEmail(user.Email, frontURL)
 
 	return nil
 }

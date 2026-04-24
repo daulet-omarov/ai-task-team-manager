@@ -1117,6 +1117,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/employees/me/activities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns daily contribution counts (tasks created + comments), total contributions, and total active days for the authenticated employee.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee activity contributions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/employee.ActivitiesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/invites": {
             "get": {
                 "security": [
@@ -2142,6 +2173,34 @@ const docTemplate = `{
                 "content": {
                     "type": "string",
                     "minLength": 1
+                }
+            }
+        },
+        "employee.ActivitiesResponse": {
+            "type": "object",
+            "properties": {
+                "activities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/employee.DailyContribution"
+                    }
+                },
+                "total_active_days": {
+                    "type": "integer"
+                },
+                "total_contributions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "employee.DailyContribution": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
                 }
             }
         },
