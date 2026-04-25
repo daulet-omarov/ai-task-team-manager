@@ -194,6 +194,48 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, BuildPollResponse(*poll))
 }
 
+// Unvote godoc
+// @Summary Remove vote from a poll option
+// @Tags Chat
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param boardId path int true "Board ID"
+// @Param request body VoteRequest true "Option to unvote"
+// @Success 200 {object} PollResponse
+// @Router /boards/{boardId}/chat/polls/unvote [post]
+func (h *Handler) Unvote(w http.ResponseWriter, r *http.Request) {
+	boardID, err := boardIDFromURL(r)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+	userID := middleware.GetUserID(r)
+
+	var req VoteRequest
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	poll, err := h.service.Unvote(boardID, userID, req)
+	if err != nil {
+		switch err.Error() {
+		case "access denied: not a board member":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "poll option not found", "poll not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		case "you have not voted for this option":
+			response.Error(w, http.StatusBadRequest, err.Error())
+		default:
+			response.Error(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	response.JSON(w, http.StatusOK, BuildPollResponse(*poll))
+}
+
 // DeleteMessage godoc
 // @Summary      Delete a chat message
 // @Description  Deletes the message. Only the author can delete their own message.

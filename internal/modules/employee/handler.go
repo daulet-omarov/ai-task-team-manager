@@ -238,6 +238,37 @@ func (h *Handler) GetActivities(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, result)
 }
 
+// GetProfile godoc
+// @Summary Get employee profile + activity dashboard
+// @Description Returns profile info and activity dashboard for any employee by their ID (employee_id == user_id).
+// @Tags Employee
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Employee ID (same as user_id)"
+// @Success 200 {object} ProfileResponse
+// @Failure 404 {string} string "not found"
+// @Router /employees/{id}/profile [get]
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	result, err := h.service.GetProfile(id)
+	if err != nil {
+		if err.Error() == "employee not found" {
+			response.Error(w, http.StatusNotFound, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	result.Profile.Photo = uploader.FullURL(r, result.Profile.Photo)
+	response.JSON(w, http.StatusOK, result)
+}
+
 // ExistsEmployee godoc
 // @Summary Check if employee profile exists
 // @Tags Employee

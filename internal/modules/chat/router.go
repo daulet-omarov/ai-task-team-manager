@@ -14,5 +14,6 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Delete("/boards/{boardId}/chat/{msgId}", h.DeleteMessage)
 		r.Post("/boards/{boardId}/chat/polls", h.CreatePoll)
 		r.Post("/boards/{boardId}/chat/polls/vote", h.Vote)
+		r.Post("/boards/{boardId}/chat/polls/unvote", h.Unvote)
 	})
 }

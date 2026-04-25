@@ -26,7 +26,9 @@ import (
 )
 
 type App struct {
-	Server *http.Server
+	Server  *http.Server
+	tlsCert string
+	tlsKey  string
 }
 
 func New() *App {
@@ -81,12 +83,17 @@ func New() *App {
 	}
 
 	return &App{
-		Server: server,
+		Server:  server,
+		tlsCert: cfg.TLSCert,
+		tlsKey:  cfg.TLSKey,
 	}
 }
 
 func (a *App) Run() error {
+	if a.tlsCert != "" && a.tlsKey != "" {
+		logger.Log.Info("starting server (TLS)")
+		return a.Server.ListenAndServeTLS(a.tlsCert, a.tlsKey)
+	}
 	logger.Log.Info("starting server")
-
 	return a.Server.ListenAndServe()
 }

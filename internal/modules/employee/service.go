@@ -100,6 +100,23 @@ func (s *Service) Delete(userID uint) error {
 	return s.repo.Delete(userID)
 }
 
+// GetProfile returns profile info + activity dashboard for a given employee/user ID.
+// Since employee.id == user.id (1-to-1), both are interchangeable.
+func (s *Service) GetProfile(id uint) (*ProfileResponse, error) {
+	profile, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	activities, err := s.GetActivities(id)
+	if err != nil {
+		return nil, err
+	}
+	return &ProfileResponse{
+		Profile:    profile,
+		Activities: activities,
+	}, nil
+}
+
 func (s *Service) Exists(userID uint) (bool, error) {
 	_, err := s.repo.GetByUserID(userID)
 	if err != nil {

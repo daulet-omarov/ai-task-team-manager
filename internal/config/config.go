@@ -10,6 +10,8 @@ import (
 type Config struct {
 	AppPort string
 	AppUrl  string
+	TLSCert string
+	TLSKey  string
 
 	DBHost     string
 	DBPort     string
@@ -37,6 +39,8 @@ func Load() *Config {
 	cfg := &Config{
 		AppPort: getEnv("APP_PORT", "8080"),
 		AppUrl:  getEnv("APP_URL", "localhost:8080"),
+		TLSCert: getEnv("TLS_CERT", ""),
+		TLSKey:  getEnv("TLS_KEY", ""),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),

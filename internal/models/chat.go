@@ -46,4 +46,5 @@ type BoardPollVote struct {
 	OptionID   uint `gorm:"not null"`
 	EmployeeID uint `gorm:"not null"`
 	CreatedAt  time.Time
+	Employee   Employee
 }

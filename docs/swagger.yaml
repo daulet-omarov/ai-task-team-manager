@@ -326,6 +326,13 @@ definitions:
       user_id:
         type: integer
     type: object
+  employee.ProfileResponse:
+    properties:
+      activities:
+        $ref: '#/definitions/employee.ActivitiesResponse'
+      profile:
+        $ref: '#/definitions/employee.EmployeeResponse'
+    type: object
   invite.CreateInviteRequest:
     properties:
       user_id:
@@ -863,6 +870,34 @@ paths:
       summary: Create a poll message
       tags:
       - Chat
+  /boards/{boardId}/chat/polls/unvote:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: Option to unvote
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat.VoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat.PollResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove vote from a poll option
+      tags:
+      - Chat
   /boards/{boardId}/chat/polls/vote:
     post:
       consumes:
@@ -1312,6 +1347,32 @@ paths:
       security:
       - BearerAuth: []
       summary: Update employee profile
+      tags:
+      - Employee
+  /employees/{id}/profile:
+    get:
+      description: Returns profile info and activity dashboard for any employee by
+        their ID (employee_id == user_id).
+      parameters:
+      - description: Employee ID (same as user_id)
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/employee.ProfileResponse'
+        "404":
+          description: not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get employee profile + activity dashboard
       tags:
       - Employee
   /employees/exists:

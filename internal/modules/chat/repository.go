@@ -23,7 +23,7 @@ func (r *Repository) GetMessages(boardID uint, limit, offset int) ([]models.Boar
 		Where("board_id = ?", boardID).
 		Preload("Author").
 		Preload("Attachments").
-		Preload("Poll.Options.Votes").
+		Preload("Poll.Options.Votes.Employee").
 		Preload("ReplyTo.Author").
 		Preload("ReplyTo.Attachments").
 		Order("created_at DESC").
@@ -61,7 +61,7 @@ func (r *Repository) CreatePoll(p *models.BoardPoll) error {
 func (r *Repository) GetPollByID(id uint) (*models.BoardPoll, error) {
 	var p models.BoardPoll
 	err := r.db.
-		Preload("Options.Votes").
+		Preload("Options.Votes.Employee").
 		First(&p, id).Error
 	if err != nil {
 		return nil, err
@@ -85,6 +85,20 @@ func (r *Repository) HasVoted(optionID, employeeID uint) (bool, error) {
 		Where("option_id = ? AND employee_id = ?", optionID, employeeID).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// GetVoteInPoll returns the existing vote by employeeID for any option in the given poll.
+// Returns nil, nil when the employee has not voted in this poll yet.
+func (r *Repository) GetVoteInPoll(pollID, employeeID uint) (*models.BoardPollVote, error) {
+	var vote models.BoardPollVote
+	err := r.db.
+		Joins("JOIN board_poll_options ON board_poll_options.id = board_poll_votes.option_id").
+		Where("board_poll_options.poll_id = ? AND board_poll_votes.employee_id = ?", pollID, employeeID).
+		First(&vote).Error
+	if err != nil {
+		return nil, nil // not found → no previous vote
+	}
+	return &vote, nil
 }
 
 func (r *Repository) GetOptionByID(id uint) (*models.BoardPollOption, error) {

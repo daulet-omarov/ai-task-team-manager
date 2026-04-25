@@ -544,6 +544,51 @@
                 }
             }
         },
+        "/boards/{boardId}/chat/polls/unvote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Remove vote from a poll option",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Option to unvote",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.VoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/chat.PollResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/boards/{boardId}/chat/polls/vote": {
             "post": {
                 "security": [
@@ -1367,6 +1412,46 @@
                     },
                     "500": {
                         "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/{id}/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns profile info and activity dashboard for any employee by their ID (employee_id == user_id).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee profile + activity dashboard",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee ID (same as user_id)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/employee.ProfileResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
                         "schema": {
                             "type": "string"
                         }
@@ -2660,6 +2745,17 @@
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "employee.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "activities": {
+                    "$ref": "#/definitions/employee.ActivitiesResponse"
+                },
+                "profile": {
+                    "$ref": "#/definitions/employee.EmployeeResponse"
                 }
             }
         },

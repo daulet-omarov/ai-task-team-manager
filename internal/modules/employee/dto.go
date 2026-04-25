@@ -43,3 +43,8 @@ type ActivitiesResponse struct {
 	MaxStreak          int                 `json:"max_streak"`
 	CurrentStreak      int                 `json:"current_streak"`
 }
+
+type ProfileResponse struct {
+	Profile    *EmployeeResponse   `json:"profile"`
+	Activities *ActivitiesResponse `json:"activities"`
+}

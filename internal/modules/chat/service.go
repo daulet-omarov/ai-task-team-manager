@@ -152,22 +152,64 @@ func (s *Service) Vote(boardID uint, userID int64, req VoteRequest) (*models.Boa
 		return nil, errors.New("poll does not belong to this board")
 	}
 
+	// Single-choice: if the user already voted in this poll, remove the old vote first.
+	existing, err := s.repo.GetVoteInPoll(poll.ID, empID)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		if existing.OptionID == req.OptionID {
+			return nil, errors.New("already voted for this option")
+		}
+		if err := s.repo.RemoveVote(existing.OptionID, empID); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.repo.AddVote(&models.BoardPollVote{
+		OptionID:   req.OptionID,
+		EmployeeID: empID,
+	}); err != nil {
+		return nil, err
+	}
+
+	return s.repo.GetPollByID(poll.ID)
+}
+
+// Unvote removes the user's vote from a poll option.
+func (s *Service) Unvote(boardID uint, userID int64, req VoteRequest) (*models.BoardPoll, error) {
+	if err := s.checkMember(boardID, userID); err != nil {
+		return nil, err
+	}
+	empID, err := s.employeeIDFromUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	opt, err := s.repo.GetOptionByID(req.OptionID)
+	if err != nil {
+		return nil, errors.New("poll option not found")
+	}
+
+	poll, err := s.repo.GetPollByID(opt.PollID)
+	if err != nil {
+		return nil, errors.New("poll not found")
+	}
+
+	msg, err := s.repo.GetMessageByID(poll.MessageID)
+	if err != nil || msg.BoardID != boardID {
+		return nil, errors.New("poll does not belong to this board")
+	}
+
 	voted, err := s.repo.HasVoted(req.OptionID, empID)
 	if err != nil {
 		return nil, err
 	}
-	if voted {
-		// Toggle: remove vote
-		if err := s.repo.RemoveVote(req.OptionID, empID); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := s.repo.AddVote(&models.BoardPollVote{
-			OptionID:   req.OptionID,
-			EmployeeID: empID,
-		}); err != nil {
-			return nil, err
-		}
+	if !voted {
+		return nil, errors.New("you have not voted for this option")
+	}
+
+	if err := s.repo.RemoveVote(req.OptionID, empID); err != nil {
+		return nil, err
 	}
 
 	return s.repo.GetPollByID(poll.ID)
@@ -231,12 +273,15 @@ func BuildMessageResponse(m models.BoardChatMessage, r *http.Request) MessageRes
 	if m.Poll != nil {
 		opts := make([]PollOptionResponse, len(m.Poll.Options))
 		for i, o := range m.Poll.Options {
-			voters := make([]AuthorInfo, 0)
-			_ = voters
+			voters := make([]AuthorInfo, len(o.Votes))
+			for j, v := range o.Votes {
+				voters[j] = toAuthorInfo(v.Employee, r)
+			}
 			opts[i] = PollOptionResponse{
 				ID:        o.ID,
 				Text:      o.Text,
 				VoteCount: len(o.Votes),
+				Voters:    voters,
 			}
 		}
 		poll = &PollResponse{
@@ -262,10 +307,19 @@ func BuildMessageResponse(m models.BoardChatMessage, r *http.Request) MessageRes
 func BuildPollResponse(p models.BoardPoll) PollResponse {
 	opts := make([]PollOptionResponse, len(p.Options))
 	for i, o := range p.Options {
+		voters := make([]AuthorInfo, len(o.Votes))
+		for j, v := range o.Votes {
+			voters[j] = AuthorInfo{
+				ID:       v.Employee.ID,
+				FullName: v.Employee.FullName,
+				Photo:    v.Employee.Photo,
+			}
+		}
 		opts[i] = PollOptionResponse{
 			ID:        o.ID,
 			Text:      o.Text,
 			VoteCount: len(o.Votes),
+			Voters:    voters,
 		}
 	}
 	return PollResponse{
