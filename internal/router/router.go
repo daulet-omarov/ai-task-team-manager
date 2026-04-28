@@ -1,7 +1,6 @@
 package router
 
 import (
-	"net/http"
 	"strings"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
@@ -63,10 +62,6 @@ func SetupRouter(
 	attachment.RegisterRoutes(r, attachmentHandler)
 	notion.RegisterRoutes(r, notionHandler)
 	chat.RegisterRoutes(r, chatHandler)
-
-	// Serve uploaded files as static assets: GET /uploads/<filename>
-	fileServer := http.FileServer(http.Dir("./uploads"))
-	r.Handle("/uploads/*", http.StripPrefix("/uploads", fileServer))
 
 	return r
 }

@@ -30,6 +30,13 @@ type Config struct {
 	AppBaseURL   string
 
 	AllowedOrigins string
+
+	S3Endpoint  string
+	S3Region    string
+	S3AccessKey string
+	S3SecretKey string
+	S3Bucket    string
+	S3PublicURL string
 }
 
 func Load() *Config {
@@ -62,6 +69,13 @@ func Load() *Config {
 		AppBaseURL:   getEnv("APP_BASE_URL", "http://localhost:8080"),
 
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:5173"),
+
+		S3Endpoint:  getEnv("S3_ENDPOINT", ""),
+		S3Region:    getEnv("S3_REGION", ""),
+		S3AccessKey: getEnv("S3_ACCESS_KEY", ""),
+		S3SecretKey: getEnv("S3_SECRET_KEY", ""),
+		S3Bucket:    getEnv("S3_BUCKET", ""),
+		S3PublicURL: getEnv("S3_PUBLIC_URL", ""),
 	}
 
 	return cfg

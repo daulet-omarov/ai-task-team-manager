@@ -22,6 +22,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/validator"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 	"github.com/daulet-omarov/ai-task-team-manager/pkg/mailer"
+	"github.com/daulet-omarov/ai-task-team-manager/pkg/uploader"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -43,6 +44,15 @@ func New() *App {
 	cfg := config.Load()
 
 	docs.SwaggerInfo.Host = cfg.AppUrl
+
+	uploader.Init(uploader.Config{
+		Endpoint:  cfg.S3Endpoint,
+		Region:    cfg.S3Region,
+		AccessKey: cfg.S3AccessKey,
+		SecretKey: cfg.S3SecretKey,
+		Bucket:    cfg.S3Bucket,
+		PublicURL: cfg.S3PublicURL,
+	})
 
 	// init JWT
 	jwt.Init(cfg.JWTSecret)
