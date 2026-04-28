@@ -11,8 +11,10 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Post("/", h.Create)
 		r.Get("/", h.GetAll)
 		r.Get("/me", h.GetByUserID)
+		r.Get("/me/activities", h.GetActivities)
 		r.Put("/", h.Update)
 		r.Delete("/", h.Delete)
 		r.Get("/exists", h.Exists)
+		r.Get("/{id}/profile", h.GetProfile)
 	})
 }

@@ -30,3 +30,21 @@ type EmployeeResponse struct {
 	Birthday    string        `json:"birthday"`
 	Gender      models.Gender `json:"gender"`
 }
+
+type DailyContribution struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
+}
+
+type ActivitiesResponse struct {
+	Activities         []DailyContribution `json:"activities"`
+	TotalContributions int                 `json:"total_contributions"`
+	TotalActiveDays    int                 `json:"total_active_days"`
+	MaxStreak          int                 `json:"max_streak"`
+	CurrentStreak      int                 `json:"current_streak"`
+}
+
+type ProfileResponse struct {
+	Profile    *EmployeeResponse   `json:"profile"`
+	Activities *ActivitiesResponse `json:"activities"`
+}

@@ -10,12 +10,15 @@ import (
 type Config struct {
 	AppPort string
 	AppUrl  string
+	TLSCert string
+	TLSKey  string
 
 	DBHost     string
 	DBPort     string
 	DBUser     string
 	DBPassword string
 	DBName     string
+	DBSSLMode  string
 
 	JWTSecret string
 
@@ -25,6 +28,8 @@ type Config struct {
 	SMTPPassword string
 	SMTPFrom     string
 	AppBaseURL   string
+
+	AllowedOrigins string
 }
 
 func Load() *Config {
@@ -37,12 +42,15 @@ func Load() *Config {
 	cfg := &Config{
 		AppPort: getEnv("APP_PORT", "8080"),
 		AppUrl:  getEnv("APP_URL", "localhost:8080"),
+		TLSCert: getEnv("TLS_CERT", ""),
+		TLSKey:  getEnv("TLS_KEY", ""),
 
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
 		DBName:     getEnv("DB_NAME", "myapp"),
+		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		JWTSecret: getEnv("JWT_SECRET", "secret"),
 
@@ -51,7 +59,9 @@ func Load() *Config {
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:     getEnv("SMTP_FROM", ""),
-		AppBaseURL:   getEnv("APP_BASE_URL", "http://localhost:7777"),
+		AppBaseURL:   getEnv("APP_BASE_URL", "http://localhost:8080"),
+
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:5173"),
 	}
 
 	return cfg

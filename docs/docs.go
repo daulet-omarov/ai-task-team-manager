@@ -402,6 +402,283 @@ const docTemplate = `{
                 }
             }
         },
+        "/boards/{boardId}/chat": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns paginated messages for a board (newest first). Members only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get board chat messages",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 50, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/chat.MessageResponse"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Send a text / file / voice / photo / video message. Use multipart/form-data. Field \"files\" accepts multiple files.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send a chat message",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Message text",
+                        "name": "text",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the message being replied to",
+                        "name": "reply_to_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Attachments (repeat for multiple)",
+                        "name": "files",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/chat.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/chat/polls": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a poll in the board chat. Members only.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Create a poll message",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Poll data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.CreatePollRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/chat.MessageResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/chat/polls/unvote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Remove vote from a poll option",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Option to unvote",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.VoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/chat.PollResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/chat/polls/vote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a vote if not yet voted; removes it if already voted.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Vote on a poll option (toggle)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Option to vote for",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat.VoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/chat.PollResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/boards/{boardId}/chat/{msgId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes the message. Only the author can delete their own message.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Delete a chat message",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Message ID",
+                        "name": "msgId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/boards/{boardId}/invite": {
             "post": {
                 "security": [
@@ -1117,6 +1394,77 @@ const docTemplate = `{
                 }
             }
         },
+        "/employees/me/activities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns daily contribution counts (tasks created + comments), total contributions, and total active days for the authenticated employee.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee activity contributions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/employee.ActivitiesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/{id}/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns profile info and activity dashboard for any employee by their ID (employee_id == user_id).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee profile + activity dashboard",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee ID (same as user_id)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/employee.ProfileResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/invites": {
             "get": {
                 "security": [
@@ -1230,6 +1578,57 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "invitation not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/notion/import": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetches all pages from a Notion database and imports them as tasks. When board_id is 0 a new board is created using the database title.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notion"
+                ],
+                "summary": "Import tasks from Notion",
+                "parameters": [
+                    {
+                        "description": "Notion import request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/notion.ImportResult"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
                         "schema": {
                             "type": "string"
                         }
@@ -2104,6 +2503,153 @@ const docTemplate = `{
                 }
             }
         },
+        "chat.AttachmentResponse": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mime_type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.AuthorInfo": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "photo": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.CreatePollRequest": {
+            "type": "object",
+            "required": [
+                "options",
+                "question"
+            ],
+            "properties": {
+                "options": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "attachments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/chat.AttachmentResponse"
+                    }
+                },
+                "author": {
+                    "$ref": "#/definitions/chat.AuthorInfo"
+                },
+                "board_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "poll": {
+                    "$ref": "#/definitions/chat.PollResponse"
+                },
+                "reply_to": {
+                    "$ref": "#/definitions/chat.ReplyToResponse"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.PollOptionResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "vote_count": {
+                    "type": "integer"
+                },
+                "voters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/chat.AuthorInfo"
+                    }
+                }
+            }
+        },
+        "chat.PollResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/chat.PollOptionResponse"
+                    }
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.ReplyToResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "$ref": "#/definitions/chat.AuthorInfo"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat.VoteRequest": {
+            "type": "object",
+            "required": [
+                "option_id"
+            ],
+            "properties": {
+                "option_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "comment.CommentResponse": {
             "type": "object",
             "properties": {
@@ -2145,6 +2691,40 @@ const docTemplate = `{
                 }
             }
         },
+        "employee.ActivitiesResponse": {
+            "type": "object",
+            "properties": {
+                "activities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/employee.DailyContribution"
+                    }
+                },
+                "current_streak": {
+                    "type": "integer"
+                },
+                "max_streak": {
+                    "type": "integer"
+                },
+                "total_active_days": {
+                    "type": "integer"
+                },
+                "total_contributions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "employee.DailyContribution": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                }
+            }
+        },
         "employee.EmployeeResponse": {
             "type": "object",
             "properties": {
@@ -2171,6 +2751,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "employee.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "activities": {
+                    "$ref": "#/definitions/employee.ActivitiesResponse"
+                },
+                "profile": {
+                    "$ref": "#/definitions/employee.EmployeeResponse"
                 }
             }
         },
@@ -2222,6 +2813,44 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "notion.ImportRequest": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "description": "BoardID is optional; when 0 a new board is created from the Notion database title.",
+                    "type": "integer"
+                },
+                "database_id": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "notion.ImportResult": {
+            "type": "object",
+            "properties": {
+                "board_id": {
+                    "type": "integer"
+                },
+                "board_name": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "skipped": {
+                    "type": "integer"
+                },
+                "tasks_created": {
+                    "type": "integer"
                 }
             }
         },
@@ -2392,7 +3021,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "ai-task-team-manager.onrender.com",
+	Host:             "192.168.100.32:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "AI Task Team Manager API",

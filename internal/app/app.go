@@ -11,9 +11,11 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/chat"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/notion"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/upload"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/router"
@@ -24,7 +26,9 @@ import (
 )
 
 type App struct {
-	Server *http.Server
+	Server  *http.Server
+	tlsCert string
+	tlsKey  string
 }
 
 func New() *App {
@@ -42,12 +46,13 @@ func New() *App {
 	jwt.Init(cfg.JWTSecret)
 
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		cfg.DBUser,
 		cfg.DBPassword,
 		cfg.DBHost,
 		cfg.DBPort,
 		cfg.DBName,
+		cfg.DBSSLMode,
 	)
 
 	// singleton DB
@@ -65,10 +70,15 @@ func New() *App {
 	uploadHandler := upload.NewHandler()
 	commentHandler := comment.NewModule(db)
 	attachmentHandler := attachment.NewModule(db)
+	notionHandler := notion.NewModule(db)
+	chatHandler := chat.NewModule(db)
 
 	// router
-	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler)
+	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler, cfg.AllowedOrigins)
 
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	server := &http.Server{
@@ -77,12 +87,17 @@ func New() *App {
 	}
 
 	return &App{
-		Server: server,
+		Server:  server,
+		tlsCert: cfg.TLSCert,
+		tlsKey:  cfg.TLSKey,
 	}
 }
 
 func (a *App) Run() error {
+	if a.tlsCert != "" && a.tlsKey != "" {
+		logger.Log.Info("starting server (TLS)")
+		return a.Server.ListenAndServeTLS(a.tlsCert, a.tlsKey)
+	}
 	logger.Log.Info("starting server")
-
 	return a.Server.ListenAndServe()
 }

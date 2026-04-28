@@ -2,14 +2,17 @@ package router
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/chat"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/notion"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/upload"
 	"github.com/go-chi/chi/v5"
@@ -25,12 +28,15 @@ func SetupRouter(
 	uploadHandler *upload.Handler,
 	commentHandler *comment.Handler,
 	attachmentHandler *attachment.Handler,
+	notionHandler *notion.Handler,
+	chatHandler *chat.Handler,
+	allowedOrigins string,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
+		AllowedOrigins: strings.Split(allowedOrigins, ","),
 		AllowedMethods: []string{
 			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
 		},
@@ -41,7 +47,7 @@ func SetupRouter(
 			"X-CSRF-Token",
 		},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
@@ -55,6 +61,8 @@ func SetupRouter(
 	upload.RegisterRoutes(r, uploadHandler)
 	comment.RegisterRoutes(r, commentHandler)
 	attachment.RegisterRoutes(r, attachmentHandler)
+	notion.RegisterRoutes(r, notionHandler)
+	chat.RegisterRoutes(r, chatHandler)
 
 	// Serve uploaded files as static assets: GET /uploads/<filename>
 	fileServer := http.FileServer(http.Dir("./uploads"))

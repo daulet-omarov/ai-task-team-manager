@@ -100,12 +100,151 @@ func (s *Service) Delete(userID uint) error {
 	return s.repo.Delete(userID)
 }
 
+// GetProfile returns profile info + activity dashboard for a given employee/user ID.
+// Since employee.id == user.id (1-to-1), both are interchangeable.
+func (s *Service) GetProfile(id uint) (*ProfileResponse, error) {
+	profile, err := s.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	activities, err := s.GetActivities(id)
+	if err != nil {
+		return nil, err
+	}
+	return &ProfileResponse{
+		Profile:    profile,
+		Activities: activities,
+	}, nil
+}
+
 func (s *Service) Exists(userID uint) (bool, error) {
 	_, err := s.repo.GetByUserID(userID)
 	if err != nil {
 		return false, nil
 	}
 	return true, nil
+}
+
+const contributionStaleness = time.Hour
+
+func (s *Service) GetActivities(employeeID uint) (*ActivitiesResponse, error) {
+	stored, lastComputed, err := s.repo.getStoredActivities(employeeID)
+	if err != nil {
+		return nil, err
+	}
+
+	// First request ever: full recompute across all history.
+	if len(stored) == 0 {
+		rows, err := s.repo.computeActivities(employeeID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.repo.upsertActivities(employeeID, rows); err != nil {
+			return nil, err
+		}
+		return buildActivitiesResponse(rows), nil
+	}
+
+	// Data is fresh — return as-is.
+	if time.Since(lastComputed) < contributionStaleness {
+		return buildActivitiesResponse(stored), nil
+	}
+
+	// Stale: find the earliest date that could be affected by changes since
+	// the last computation. This avoids recomputing untouched history.
+	minDate, hasChanges, err := s.repo.findMinAffectedDate(employeeID, lastComputed)
+	if err != nil {
+		return nil, err
+	}
+
+	// Nothing changed at all — just refresh timestamps and return stored data.
+	if !hasChanges {
+		_ = s.repo.touchActivities(employeeID)
+		return buildActivitiesResponse(stored), nil
+	}
+
+	// Recompute only from the earliest affected date onwards.
+	recent, err := s.repo.computeActivitiesSince(employeeID, minDate)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.repo.upsertActivitiesSince(employeeID, minDate, recent); err != nil {
+		return nil, err
+	}
+
+	// Return the full picture: untouched old history + refreshed window.
+	all, _, err := s.repo.getStoredActivities(employeeID)
+	if err != nil {
+		return nil, err
+	}
+	return buildActivitiesResponse(all), nil
+}
+
+func buildActivitiesResponse(rows []dailyActivityRow) *ActivitiesResponse {
+	activities := make([]DailyContribution, 0, len(rows))
+	total := 0
+	for _, r := range rows {
+		activities = append(activities, DailyContribution{Date: r.Date, Count: r.Count})
+		total += r.Count
+	}
+
+	return &ActivitiesResponse{
+		Activities:         activities,
+		TotalContributions: total,
+		TotalActiveDays:    len(rows),
+		MaxStreak:          calcMaxStreak(rows),
+		CurrentStreak:      calcCurrentStreak(rows),
+	}
+}
+
+// calcCurrentStreak counts consecutive active days going backwards from today.
+// Yesterday counts too — the user may not have contributed yet today.
+func calcCurrentStreak(rows []dailyActivityRow) int {
+	if len(rows) == 0 {
+		return 0
+	}
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	yesterday := today.Add(-24 * time.Hour)
+
+	last, _ := time.Parse("2006-01-02", rows[len(rows)-1].Date)
+	last = last.UTC()
+
+	// Streak is broken if the last active day is not today or yesterday.
+	if last.Before(yesterday) {
+		return 0
+	}
+
+	streak := 1
+	for i := len(rows) - 2; i >= 0; i-- {
+		curr, _ := time.Parse("2006-01-02", rows[i].Date)
+		next, _ := time.Parse("2006-01-02", rows[i+1].Date)
+		if next.Sub(curr) == 24*time.Hour {
+			streak++
+		} else {
+			break
+		}
+	}
+	return streak
+}
+
+func calcMaxStreak(rows []dailyActivityRow) int {
+	if len(rows) == 0 {
+		return 0
+	}
+	max, cur := 1, 1
+	for i := 1; i < len(rows); i++ {
+		prev, _ := time.Parse("2006-01-02", rows[i-1].Date)
+		curr, _ := time.Parse("2006-01-02", rows[i].Date)
+		if curr.Sub(prev) == 24*time.Hour {
+			cur++
+			if cur > max {
+				max = cur
+			}
+		} else {
+			cur = 1
+		}
+	}
+	return max
 }
 
 // --- helper ---

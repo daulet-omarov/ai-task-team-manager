@@ -1,6 +1,8 @@
 package board
 
 import (
+	"fmt"
+
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"gorm.io/gorm"
 )
@@ -97,17 +99,25 @@ func (r *Repository) nextPosition(boardID uint) (int, error) {
 // UpsertStatus inserts a status by code (generating from title) if it doesn't exist,
 // then links it to the board. Returns the StatusResponse.
 func (r *Repository) UpsertStatus(boardID uint, name, code, colour string) (*StatusResponse, error) {
-	err := r.db.Exec(`
-		INSERT INTO statuses (name, code) VALUES (?, ?)
-		ON CONFLICT (code) DO NOTHING
-	`, name, code).Error
-	if err != nil {
-		return nil, err
+	// SELECT first to avoid hitting the INSERT (and the ID sequence) when the status already exists.
+	var statusID uint
+	r.db.Raw("SELECT id FROM statuses WHERE code = ?", code).Scan(&statusID)
+
+	if statusID == 0 {
+		// Sync the sequence so seeded rows with explicit IDs don't block new inserts.
+		r.db.Exec("SELECT setval(pg_get_serial_sequence('statuses', 'id'), COALESCE((SELECT MAX(id) FROM statuses), 0))")
+
+		if err := r.db.Exec(`
+			INSERT INTO statuses (name, code) VALUES (?, ?)
+			ON CONFLICT (code) DO NOTHING
+		`, name, code).Error; err != nil {
+			return nil, err
+		}
+		r.db.Raw("SELECT id FROM statuses WHERE code = ?", code).Scan(&statusID)
 	}
 
-	var statusID uint
-	if err := r.db.Raw("SELECT id FROM statuses WHERE code = ?", code).Scan(&statusID).Error; err != nil {
-		return nil, err
+	if statusID == 0 {
+		return nil, fmt.Errorf("failed to upsert status with code %q", code)
 	}
 
 	pos, err := r.nextPosition(boardID)
