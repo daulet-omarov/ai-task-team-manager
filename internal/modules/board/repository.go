@@ -58,14 +58,19 @@ func (r *Repository) IsMember(boardID uint, userID int64) (bool, error) {
 }
 
 // AddDefaultStatuses links TO DO (pos 1), IN PROGRESS (pos 2), DONE (pos 3) to the board.
+// The first status (to_do, position=1) is marked as is_default=true.
 func (r *Repository) AddDefaultStatuses(boardID uint) error {
 	return r.db.Exec(`
-		INSERT INTO board_statuses (board_id, status_id, position)
+		INSERT INTO board_statuses (board_id, status_id, position, is_default)
 		SELECT ?, s.id,
 		       CASE s.code
 		           WHEN 'to_do'       THEN 1
 		           WHEN 'in_progress' THEN 2
 		           WHEN 'done'        THEN 3
+		       END,
+		       CASE s.code
+		           WHEN 'to_do' THEN true
+		           ELSE false
 		       END
 		FROM statuses s
 		WHERE s.code IN ('to_do', 'in_progress', 'done')
@@ -77,7 +82,7 @@ func (r *Repository) AddDefaultStatuses(boardID uint) error {
 func (r *Repository) GetBoardStatuses(boardID uint) ([]*StatusResponse, error) {
 	var rows []*StatusResponse
 	err := r.db.Raw(`
-		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour, bs.is_default
 		FROM board_statuses bs
 		JOIN statuses s ON s.id = bs.status_id
 		WHERE bs.board_id = ?
@@ -171,7 +176,7 @@ func (r *Repository) UpdateBoardStatus(boardStatusID uint, title, colour string)
 
 	var row StatusResponse
 	err := r.db.Raw(`
-		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour, bs.is_default
 		FROM board_statuses bs
 		JOIN statuses s ON s.id = bs.status_id
 		WHERE bs.id = ?
@@ -257,4 +262,67 @@ func (r *Repository) GetMemberByID(boardMemberID uint) (*models.BoardMember, err
 // DeleteMember removes a board_members row by its primary key.
 func (r *Repository) DeleteMember(boardMemberID uint) error {
 	return r.db.Delete(&models.BoardMember{}, boardMemberID).Error
+}
+
+// SetDefaultFirstStatus marks the status at position=1 as the default for the board,
+// clearing any previous default. Used after bulk imports when no status has is_default=true yet.
+func (r *Repository) SetDefaultFirstStatus(boardID uint) error {
+	var firstID uint
+	if err := r.db.Raw(
+		"SELECT id FROM board_statuses WHERE board_id = ? ORDER BY position ASC LIMIT 1",
+		boardID,
+	).Scan(&firstID).Error; err != nil || firstID == 0 {
+		return err
+	}
+	return r.SetDefaultBoardStatus(firstID)
+}
+
+// SetDefaultBoardStatus sets is_default=true for the given board_status_id and
+// false for all other statuses of the same board. Runs in a transaction.
+func (r *Repository) SetDefaultBoardStatus(boardStatusID uint) error {
+	var boardID uint
+	if err := r.db.Raw("SELECT board_id FROM board_statuses WHERE id = ?", boardStatusID).Scan(&boardID).Error; err != nil {
+		return err
+	}
+	if boardID == 0 {
+		return fmt.Errorf("board status not found")
+	}
+
+	tx := r.db.Begin()
+	if err := tx.Exec("UPDATE board_statuses SET is_default = false WHERE board_id = ?", boardID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Exec("UPDATE board_statuses SET is_default = true WHERE id = ?", boardStatusID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+// GetDefaultStatusIDForBoard returns the status_id of the default board status.
+// Falls back to the status with position=1 if none is marked default.
+func (r *Repository) GetDefaultStatusIDForBoard(boardID uint) (uint, error) {
+	var statusID uint
+	err := r.db.Raw(`
+		SELECT s.id FROM board_statuses bs
+		JOIN statuses s ON s.id = bs.status_id
+		WHERE bs.board_id = ? AND bs.is_default = true
+		LIMIT 1
+	`, boardID).Scan(&statusID).Error
+	if err != nil {
+		return 0, err
+	}
+	if statusID != 0 {
+		return statusID, nil
+	}
+	// Fallback: position=1
+	err = r.db.Raw(`
+		SELECT s.id FROM board_statuses bs
+		JOIN statuses s ON s.id = bs.status_id
+		WHERE bs.board_id = ?
+		ORDER BY bs.position ASC
+		LIMIT 1
+	`, boardID).Scan(&statusID).Error
+	return statusID, err
 }

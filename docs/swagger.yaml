@@ -148,6 +148,8 @@ definitions:
         type: string
       colour:
         type: string
+      is_default:
+        type: boolean
       name:
         type: string
       position:
@@ -1637,6 +1639,34 @@ paths:
       security:
       - BearerAuth: []
       summary: Update board status
+      tags:
+      - Board
+  /statuses/{boardStatusId}/set-default:
+    patch:
+      description: Mark a board status as the default for new tasks; only one can
+        be default per board
+      parameters:
+      - description: Board Status ID
+        in: path
+        name: boardStatusId
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: status not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Set default board status
       tags:
       - Board
   /statuses/reorder:

@@ -156,6 +156,18 @@ func (s *Service) ReorderStatuses(userID int64, req ReorderStatusesRequest) erro
 	return s.repo.ReorderStatuses(req.Statuses)
 }
 
+func (s *Service) SetDefaultStatus(boardStatusID uint, userID int64) error {
+	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
+	if err != nil || boardID == 0 {
+		return errors.New("status not found")
+	}
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return errors.New("access denied")
+	}
+	return s.repo.SetDefaultBoardStatus(boardStatusID)
+}
+
 func (s *Service) DeleteStatus(boardStatusID uint, userID int64) error {
 	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 	if err != nil || boardID == 0 {

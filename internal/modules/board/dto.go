@@ -46,6 +46,7 @@ type StatusResponse struct {
 	Code          string `json:"code"`
 	Position      int    `json:"position"`
 	Colour        string `json:"colour"`
+	IsDefault     bool   `json:"is_default"`
 }
 
 type ReorderStatusesRequest struct {
