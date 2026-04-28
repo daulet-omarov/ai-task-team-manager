@@ -1,6 +1,8 @@
 package uploader
 
 import (
+	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -11,11 +13,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 const (
 	MaxFileSize       = 5 << 20   // 5 MB  (photos)
-	MaxAttachmentSize = 200 << 20 // 200 MB (photos + videos)
+	MaxAttachmentSize = 200 << 20 // 200 MB
 	UploadsDir        = "./uploads"
 )
 
@@ -35,21 +42,77 @@ var allowedVideoTypes = map[string]string{
 }
 
 var allowedExtensions = map[string]string{
-	// images
 	".jpg": ".jpg", ".jpeg": ".jpg",
 	".png": ".png", ".gif": ".gif", ".webp": ".webp",
-	// videos
 	".mp4": ".mp4", ".webm": ".webm",
 	".ogv": ".ogv", ".mov": ".mov", ".avi": ".avi",
 }
 
-// SavePhoto saves an image file to UploadsDir and returns the public URL path.
-// Returns ("", nil) if fh is nil (no file uploaded — field was omitted).
+// Config holds S3/DO Spaces credentials. Leave Bucket empty to use local storage.
+type Config struct {
+	Endpoint  string // https://blr1.digitaloceanspaces.com
+	Region    string // blr1
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	PublicURL string // https://BUCKET.blr1.digitaloceanspaces.com
+}
+
+type Uploader struct {
+	client    *s3.Client
+	bucket    string
+	publicURL string
+}
+
+var instance *Uploader
+
+// Init initialises S3 storage. Call once at startup. If cfg.Bucket is empty, falls back to local disk.
+func Init(cfg Config) {
+	if cfg.Bucket == "" {
+		return
+	}
+	client := s3.NewFromConfig(aws.Config{
+		Region:      cfg.Region,
+		Credentials: awscreds.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, ""),
+	}, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(cfg.Endpoint)
+		o.UsePathStyle = true
+	})
+	instance = &Uploader{
+		client:    client,
+		bucket:    cfg.Bucket,
+		publicURL: strings.TrimRight(cfg.PublicURL, "/"),
+	}
+}
+
+func (u *Uploader) put(key, contentType string, body io.Reader, size int64) (string, error) {
+	_, err := u.client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket:        aws.String(u.bucket),
+		Key:           aws.String(key),
+		Body:          body,
+		ContentType:   aws.String(contentType),
+		ContentLength: aws.Int64(size),
+		ACL:           s3types.ObjectCannedACLPublicRead,
+	})
+	if err != nil {
+		return "", err
+	}
+	return u.publicURL + "/" + key, nil
+}
+
+func randomFilename(ext string) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", errors.New("failed to generate filename")
+	}
+	return hex.EncodeToString(b) + ext, nil
+}
+
+// SavePhoto saves a profile image. Returns ("", nil) when fh is nil.
 func SavePhoto(fh *multipart.FileHeader) (string, error) {
 	if fh == nil {
 		return "", nil
 	}
-
 	if fh.Size > MaxFileSize {
 		return "", errors.New("file too large (max 5 MB)")
 	}
@@ -60,7 +123,6 @@ func SavePhoto(fh *multipart.FileHeader) (string, error) {
 	}
 	defer file.Close()
 
-	// Detect MIME from first 512 bytes
 	buf := make([]byte, 512)
 	n, err := file.Read(buf)
 	if err != nil && err != io.EOF {
@@ -71,51 +133,31 @@ func SavePhoto(fh *multipart.FileHeader) (string, error) {
 	ext, ok := allowedImageTypes[mimeType]
 	if !ok {
 		origExt := strings.ToLower(filepath.Ext(fh.Filename))
-		allowed := map[string]string{
-			".jpg": ".jpg", ".jpeg": ".jpg",
-			".png": ".png", ".gif": ".gif", ".webp": ".webp",
-		}
-		if mapped, found := allowed[origExt]; found {
-			ext = mapped
-		} else {
+		mapped, found := map[string]string{".jpg": ".jpg", ".jpeg": ".jpg", ".png": ".png", ".gif": ".gif", ".webp": ".webp"}[origExt]
+		if !found {
 			return "", errors.New("unsupported file type (allowed: jpeg, png, gif, webp)")
 		}
+		ext = mapped
 	}
 
-	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
-		return "", errors.New("cannot create uploads directory")
-	}
-
-	randBytes := make([]byte, 16)
-	if _, err := rand.Read(randBytes); err != nil {
-		return "", errors.New("failed to generate filename")
-	}
-	filename := hex.EncodeToString(randBytes) + ext
-	destPath := filepath.Join(UploadsDir, filename)
-
-	dst, err := os.Create(destPath)
+	filename, err := randomFilename(ext)
 	if err != nil {
-		return "", errors.New("failed to save file")
-	}
-	defer dst.Close()
-
-	if _, err := dst.Write(buf[:n]); err != nil {
-		return "", errors.New("failed to write file")
-	}
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", errors.New("failed to write file")
+		return "", err
 	}
 
-	return "/uploads/" + filename, nil
+	body := io.MultiReader(bytes.NewReader(buf[:n]), file)
+
+	if instance != nil {
+		return instance.put(filename, mimeType, body, fh.Size)
+	}
+	return saveLocal(filename, buf[:n], file)
 }
 
-// SaveFile saves any allowed file (image or video) to UploadsDir and returns the public URL path.
-// Returns ("", nil) if fh is nil.
+// SaveFile saves an image or video attachment. Returns ("", nil) when fh is nil.
 func SaveFile(fh *multipart.FileHeader) (string, error) {
 	if fh == nil {
 		return "", nil
 	}
-
 	if fh.Size > MaxAttachmentSize {
 		return "", errors.New("file too large (max 200 MB)")
 	}
@@ -126,7 +168,6 @@ func SaveFile(fh *multipart.FileHeader) (string, error) {
 	}
 	defer file.Close()
 
-	// Detect MIME from first 512 bytes
 	buf := make([]byte, 512)
 	n, err := file.Read(buf)
 	if err != nil && err != io.EOF {
@@ -134,65 +175,41 @@ func SaveFile(fh *multipart.FileHeader) (string, error) {
 	}
 	sniffedMime := http.DetectContentType(buf[:n])
 
-	// 1. Try sniffed MIME for images (most reliable for images)
 	ext, ok := allowedImageTypes[sniffedMime]
 	if !ok {
-		// 2. Try file extension (most reliable for videos — Go's sniffer returns
-		//    application/octet-stream for QuickTime/MOV and many other video formats)
 		origExt := strings.ToLower(filepath.Ext(fh.Filename))
 		if mapped, found := allowedExtensions[origExt]; found {
-			ext = mapped
-			ok = true
+			ext, ok = mapped, true
 		}
 	}
 	if !ok {
-		// 3. Try the multipart Content-Type header sent by the client
-		ctHeader := fh.Header.Get("Content-Type")
-		if mapped, found := allowedVideoTypes[ctHeader]; found {
-			ext = mapped
-			ok = true
+		if mapped, found := allowedVideoTypes[fh.Header.Get("Content-Type")]; found {
+			ext, ok = mapped, true
 		}
 	}
 	if !ok {
-		// 4. Last resort: sniffed MIME for video
 		if mapped, found := allowedVideoTypes[sniffedMime]; found {
-			ext = mapped
-			ok = true
+			ext, ok = mapped, true
 		}
 	}
 	if !ok {
 		return "", errors.New("unsupported file type (allowed: jpeg, png, gif, webp, mp4, webm, mov, avi, ogv)")
 	}
 
-	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
-		return "", errors.New("cannot create uploads directory")
-	}
-
-	randBytes := make([]byte, 16)
-	if _, err := rand.Read(randBytes); err != nil {
-		return "", errors.New("failed to generate filename")
-	}
-	filename := hex.EncodeToString(randBytes) + ext
-	destPath := filepath.Join(UploadsDir, filename)
-
-	dst, err := os.Create(destPath)
+	filename, err := randomFilename(ext)
 	if err != nil {
-		return "", errors.New("failed to save file")
-	}
-	defer dst.Close()
-
-	if _, err := dst.Write(buf[:n]); err != nil {
-		return "", errors.New("failed to write file")
-	}
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", errors.New("failed to write file")
+		return "", err
 	}
 
-	return "/uploads/" + filename, nil
+	body := io.MultiReader(bytes.NewReader(buf[:n]), file)
+
+	if instance != nil {
+		return instance.put(filename, sniffedMime, body, fh.Size)
+	}
+	return saveLocal(filename, buf[:n], file)
 }
 
-// SaveAny saves any file (no MIME restriction) to UploadsDir, up to 200 MB.
-// Useful for chat attachments: voice, audio, documents, etc.
+// SaveAny saves any file type (chat attachments). Returns ("", "", nil) when fh is nil.
 func SaveAny(fh *multipart.FileHeader) (path string, mimeType string, err error) {
 	if fh == nil {
 		return "", "", nil
@@ -213,8 +230,8 @@ func SaveAny(fh *multipart.FileHeader) (path string, mimeType string, err error)
 		return "", "", errors.New("cannot read file")
 	}
 	mimeType = http.DetectContentType(buf[:n])
-	if ctHeader := fh.Header.Get("Content-Type"); ctHeader != "" && mimeType == "application/octet-stream" {
-		mimeType = ctHeader
+	if ct := fh.Header.Get("Content-Type"); ct != "" && mimeType == "application/octet-stream" {
+		mimeType = ct
 	}
 
 	ext := strings.ToLower(filepath.Ext(fh.Filename))
@@ -222,36 +239,22 @@ func SaveAny(fh *multipart.FileHeader) (path string, mimeType string, err error)
 		ext = ".bin"
 	}
 
-	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
-		return "", "", errors.New("cannot create uploads directory")
-	}
-
-	randBytes := make([]byte, 16)
-	if _, err := rand.Read(randBytes); err != nil {
-		return "", "", errors.New("failed to generate filename")
-	}
-	filename := hex.EncodeToString(randBytes) + ext
-	destPath := filepath.Join(UploadsDir, filename)
-
-	dst, err := os.Create(destPath)
+	filename, err := randomFilename(ext)
 	if err != nil {
-		return "", "", errors.New("failed to save file")
-	}
-	defer dst.Close()
-
-	if _, err := dst.Write(buf[:n]); err != nil {
-		return "", "", errors.New("failed to write file")
-	}
-	if _, err := io.Copy(dst, file); err != nil {
-		return "", "", errors.New("failed to write file")
+		return "", "", err
 	}
 
-	return "/uploads/" + filename, mimeType, nil
+	body := io.MultiReader(bytes.NewReader(buf[:n]), file)
+
+	if instance != nil {
+		p, err := instance.put(filename, mimeType, body, fh.Size)
+		return p, mimeType, err
+	}
+	p, err := saveLocal(filename, buf[:n], file)
+	return p, mimeType, err
 }
 
-// SaveFromURL downloads a remote file and saves it to UploadsDir.
-// originalName is used only to preserve the file extension; the stored filename is randomised.
-// Returns the local path like "/uploads/abc123.pdf".
+// SaveFromURL downloads a remote file and stores it. Returns path, size, error.
 func SaveFromURL(remoteURL, originalName string) (string, int64, error) {
 	resp, err := http.Get(remoteURL) //nolint:gosec
 	if err != nil {
@@ -268,33 +271,56 @@ func SaveFromURL(remoteURL, originalName string) (string, int64, error) {
 		ext = ".bin"
 	}
 
+	filename, err := randomFilename(ext)
+	if err != nil {
+		return "", 0, err
+	}
+
+	if instance != nil {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", 0, errors.New("failed to read remote file")
+		}
+		contentType := http.DetectContentType(body)
+		path, err := instance.put(filename, contentType, bytes.NewReader(body), int64(len(body)))
+		return path, int64(len(body)), err
+	}
+
 	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
 		return "", 0, errors.New("cannot create uploads directory")
 	}
-
-	randBytes := make([]byte, 16)
-	if _, err := rand.Read(randBytes); err != nil {
-		return "", 0, errors.New("failed to generate filename")
-	}
-	filename := hex.EncodeToString(randBytes) + ext
-	destPath := filepath.Join(UploadsDir, filename)
-
-	dst, err := os.Create(destPath)
+	dst, err := os.Create(filepath.Join(UploadsDir, filename))
 	if err != nil {
 		return "", 0, errors.New("failed to create file")
 	}
 	defer dst.Close()
-
 	written, err := io.Copy(dst, resp.Body)
 	if err != nil {
 		return "", 0, errors.New("failed to write file")
 	}
-
 	return "/uploads/" + filename, written, nil
 }
 
-// FullURL constructs an absolute URL from the incoming request and a path like "/uploads/foo.png".
-// Returns "" if path is empty. Returns path unchanged if it is already an absolute URL.
+// saveLocal writes buf + remaining reader to UploadsDir and returns "/uploads/filename".
+func saveLocal(filename string, buf []byte, rest io.Reader) (string, error) {
+	if err := os.MkdirAll(UploadsDir, 0755); err != nil {
+		return "", errors.New("cannot create uploads directory")
+	}
+	dst, err := os.Create(filepath.Join(UploadsDir, filename))
+	if err != nil {
+		return "", errors.New("failed to save file")
+	}
+	defer dst.Close()
+	if _, err := dst.Write(buf); err != nil {
+		return "", errors.New("failed to write file")
+	}
+	if _, err := io.Copy(dst, rest); err != nil {
+		return "", errors.New("failed to write file")
+	}
+	return "/uploads/" + filename, nil
+}
+
+// FullURL builds an absolute URL from a path like "/uploads/foo.png" or returns S3 URLs unchanged.
 func FullURL(r *http.Request, path string) string {
 	if path == "" {
 		return ""
@@ -306,7 +332,6 @@ func FullURL(r *http.Request, path string) string {
 	if r.TLS != nil {
 		scheme = "https"
 	}
-	// X-Forwarded-Proto is set by reverse proxies (nginx, etc.)
 	if proto := r.Header.Get("X-Forwarded-Proto"); proto != "" {
 		scheme = proto
 	}
