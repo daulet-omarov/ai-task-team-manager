@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
@@ -13,10 +14,11 @@ import (
 
 type Handler struct {
 	service *Service
+	hub     *hub.Hub
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, h *hub.Hub) *Handler {
+	return &Handler{service: service, hub: h}
 }
 
 // Create godoc
@@ -87,6 +89,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(uint(boardID), hub.Event{Type: "task_created", Data: task})
 	response.JSON(w, http.StatusCreated, task)
 }
 
@@ -174,7 +177,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r)
 
-	if err := h.service.Delete(uint(taskID), userID); err != nil {
+	boardID, err := h.service.Delete(uint(taskID), userID)
+	if err != nil {
 		switch err.Error() {
 		case "access denied":
 			response.Error(w, http.StatusForbidden, err.Error())
@@ -186,6 +190,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(boardID, hub.Event{Type: "task_deleted", Data: map[string]uint{"id": uint(taskID), "board_id": boardID}})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -231,6 +236,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(task.BoardID, hub.Event{Type: "task_updated", Data: task})
 	response.JSON(w, http.StatusOK, task)
 }
 

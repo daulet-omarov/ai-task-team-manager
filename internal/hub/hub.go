@@ -1,4 +1,4 @@
-package chat
+package hub
 
 import (
 	"encoding/json"
@@ -15,20 +15,19 @@ const (
 	maxMsgSize = 512
 )
 
-type WSEvent struct {
+type Event struct {
 	Type string `json:"type"`
 	Data any    `json:"data"`
 }
 
-type wsClient struct {
+type client struct {
 	hub     *Hub
 	conn    *websocket.Conn
 	boardID uint
 	send    chan []byte
 }
 
-// writePump pumps messages from the hub to the WebSocket connection.
-func (c *wsClient) writePump() {
+func (c *client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -59,8 +58,7 @@ func (c *wsClient) writePump() {
 	}
 }
 
-// readPump keeps the connection alive and handles client disconnects.
-func (c *wsClient) readPump() {
+func (c *client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
@@ -72,26 +70,25 @@ func (c *wsClient) readPump() {
 		return nil
 	})
 	for {
-		// We don't expect messages from clients, just drain to keep alive.
 		if _, _, err := c.conn.ReadMessage(); err != nil {
 			break
 		}
 	}
 }
 
-// Hub manages all active WebSocket connections, grouped by board.
+// Hub manages WebSocket connections grouped by boardID.
 type Hub struct {
 	mu         sync.RWMutex
-	rooms      map[uint]map[*wsClient]struct{}
-	register   chan *wsClient
-	unregister chan *wsClient
+	rooms      map[uint]map[*client]struct{}
+	register   chan *client
+	unregister chan *client
 }
 
-func NewHub() *Hub {
+func New() *Hub {
 	h := &Hub{
-		rooms:      make(map[uint]map[*wsClient]struct{}),
-		register:   make(chan *wsClient, 64),
-		unregister: make(chan *wsClient, 64),
+		rooms:      make(map[uint]map[*client]struct{}),
+		register:   make(chan *client, 64),
+		unregister: make(chan *client, 64),
 	}
 	go h.run()
 	return h
@@ -103,7 +100,7 @@ func (h *Hub) run() {
 		case c := <-h.register:
 			h.mu.Lock()
 			if h.rooms[c.boardID] == nil {
-				h.rooms[c.boardID] = make(map[*wsClient]struct{})
+				h.rooms[c.boardID] = make(map[*client]struct{})
 			}
 			h.rooms[c.boardID][c] = struct{}{}
 			h.mu.Unlock()
@@ -121,8 +118,8 @@ func (h *Hub) run() {
 	}
 }
 
-// Broadcast sends a WSEvent to all clients connected to the given board.
-func (h *Hub) Broadcast(boardID uint, event WSEvent) {
+// Broadcast sends an Event to all clients connected to the given board room.
+func (h *Hub) Broadcast(boardID uint, event Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
 		return
@@ -134,7 +131,20 @@ func (h *Hub) Broadcast(boardID uint, event WSEvent) {
 		select {
 		case c.send <- data:
 		default:
-			// slow client — drop the message rather than blocking
 		}
 	}
+}
+
+// Connect upgrades conn to a WebSocket client in the given board room and
+// blocks until the connection is closed.
+func (h *Hub) Connect(conn *websocket.Conn, boardID uint) {
+	c := &client{
+		hub:     h,
+		conn:    conn,
+		boardID: boardID,
+		send:    make(chan []byte, 256),
+	}
+	h.register <- c
+	go c.writePump()
+	c.readPump()
 }

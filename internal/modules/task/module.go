@@ -1,6 +1,7 @@
 package task
 
 import (
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
 	"gorm.io/gorm"
@@ -42,11 +43,11 @@ func (r *localCommentRepo) GetByTaskID(taskID uint) ([]*CommentWithAuthor, error
 	return rows, err
 }
 
-func NewModule(db *gorm.DB) *Handler {
+func NewModule(db *gorm.DB, h *hub.Hub) *Handler {
 	repo := NewRepository(db)
 	boardRepo := board.NewRepository(db)
 	attachRepo := &localAttachmentRepo{db}
 	commentRepo := &localCommentRepo{db}
 	service := NewService(repo, boardRepo, attachRepo, attachRepo, commentRepo)
-	return NewHandler(service)
+	return NewHandler(service, h)
 }

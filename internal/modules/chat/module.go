@@ -1,16 +1,16 @@
 package chat
 
 import (
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
 	"gorm.io/gorm"
 )
 
-func NewModule(db *gorm.DB) *Handler {
+func NewModule(db *gorm.DB, h *hub.Hub) *Handler {
 	repo := NewRepository(db)
 	boardRepo := board.NewRepository(db)
 	employeeRepo := employee.NewRepository(db)
 	service := NewService(repo, boardRepo, employeeRepo)
-	hub := NewHub()
-	return NewHandler(service, hub)
+	return NewHandler(service, h)
 }

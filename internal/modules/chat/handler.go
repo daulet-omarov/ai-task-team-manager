@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
@@ -18,11 +19,11 @@ var upgrader = websocket.Upgrader{
 
 type Handler struct {
 	service *Service
-	hub     *Hub
+	hub     *hub.Hub
 }
 
-func NewHandler(service *Service, hub *Hub) *Handler {
-	return &Handler{service: service, hub: hub}
+func NewHandler(service *Service, h *hub.Hub) *Handler {
+	return &Handler{service: service, hub: h}
 }
 
 func boardIDFromURL(r *http.Request) (uint, error) {
@@ -119,7 +120,7 @@ func (h *Handler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	built := BuildMessageResponse(*msg, r)
-	h.hub.Broadcast(boardID, WSEvent{Type: "new_message", Data: built})
+	h.hub.Broadcast(boardID, hub.Event{Type: "new_message", Data: built})
 	response.JSON(w, http.StatusCreated, built)
 }
 
@@ -160,7 +161,7 @@ func (h *Handler) CreatePoll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	built := BuildMessageResponse(*msg, r)
-	h.hub.Broadcast(boardID, WSEvent{Type: "new_message", Data: built})
+	h.hub.Broadcast(boardID, hub.Event{Type: "new_message", Data: built})
 	response.JSON(w, http.StatusCreated, built)
 }
 
@@ -203,7 +204,7 @@ func (h *Handler) Vote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	built := BuildPollResponse(*poll)
-	h.hub.Broadcast(boardID, WSEvent{Type: "update_poll", Data: built})
+	h.hub.Broadcast(boardID, hub.Event{Type: "update_poll", Data: built})
 	response.JSON(w, http.StatusOK, built)
 }
 
@@ -247,7 +248,7 @@ func (h *Handler) Unvote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	built := BuildPollResponse(*poll)
-	h.hub.Broadcast(boardID, WSEvent{Type: "update_poll", Data: built})
+	h.hub.Broadcast(boardID, hub.Event{Type: "update_poll", Data: built})
 	response.JSON(w, http.StatusOK, built)
 }
 
@@ -286,13 +287,17 @@ func (h *Handler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.Broadcast(boardID, WSEvent{Type: "delete_message", Data: map[string]uint{"id": msgID}})
+	h.hub.Broadcast(boardID, hub.Event{Type: "delete_message", Data: map[string]uint{"id": msgID}})
 	w.WriteHeader(http.StatusNoContent)
 }
 
 // ServeWS godoc
-// @Summary      WebSocket endpoint for real-time chat
-// @Description  Connect via WS. Pass JWT as ?token=... query param. Receives events: new_message, delete_message, update_poll.
+// @Summary      WebSocket endpoint for real-time board events (chat + tasks + statuses)
+// @Description  Connect via WS. Pass JWT as ?token=... query param.
+// @Description  Receives all board events: new_message, delete_message, update_poll,
+// @Description  task_created, task_updated, task_deleted,
+// @Description  status_created, status_updated, status_deleted, statuses_reordered,
+// @Description  status_default_changed, member_removed.
 // @Tags         Chat
 // @Param        boardId  path   int     true  "Board ID"
 // @Param        token    query  string  true  "JWT token"
@@ -321,14 +326,5 @@ func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c := &wsClient{
-		hub:     h.hub,
-		conn:    conn,
-		boardID: boardID,
-		send:    make(chan []byte, 256),
-	}
-	h.hub.register <- c
-
-	go c.writePump()
-	c.readPump()
+	h.hub.Connect(conn, boardID)
 }
