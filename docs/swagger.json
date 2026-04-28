@@ -870,6 +870,32 @@
                 }
             }
         },
+        "/boards/{boardId}/ws": {
+            "get": {
+                "description": "Connect via WS. Pass JWT as ?token=... query param. Receives events: new_message, delete_message, update_poll.",
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "WebSocket endpoint for real-time chat",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "boardId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "JWT token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/boards/{id}": {
             "get": {
                 "security": [

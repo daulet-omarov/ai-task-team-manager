@@ -1057,6 +1057,25 @@ paths:
       summary: Add task to board
       tags:
       - Task
+  /boards/{boardId}/ws:
+    get:
+      description: 'Connect via WS. Pass JWT as ?token=... query param. Receives events:
+        new_message, delete_message, update_poll.'
+      parameters:
+      - description: Board ID
+        in: path
+        name: boardId
+        required: true
+        type: integer
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses: {}
+      summary: WebSocket endpoint for real-time chat
+      tags:
+      - Chat
   /boards/{id}:
     delete:
       description: Delete a board by ID; caller must be the board owner
