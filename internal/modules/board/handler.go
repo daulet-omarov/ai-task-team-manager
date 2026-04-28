@@ -4,18 +4,26 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/request"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
+	pkgjwt "github.com/daulet-omarov/ai-task-team-manager/pkg/jwt"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 type Handler struct {
 	service *Service
+	hub     *hub.Hub
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, h *hub.Hub) *Handler {
+	return &Handler{service: service, hub: h}
 }
 
 // GetDashboard godoc
@@ -197,6 +205,7 @@ func (h *Handler) CreateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(req.BoardID, hub.Event{Type: "status_created", Data: status})
 	response.JSON(w, http.StatusCreated, status)
 }
 
@@ -229,7 +238,7 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r)
 
-	status, err := h.service.UpdateStatus(uint(boardStatusID), userID, req)
+	boardID, status, err := h.service.UpdateStatus(uint(boardStatusID), userID, req)
 	if err != nil {
 		switch err.Error() {
 		case "access denied":
@@ -242,6 +251,7 @@ func (h *Handler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(boardID, hub.Event{Type: "status_updated", Data: status})
 	response.JSON(w, http.StatusOK, status)
 }
 
@@ -275,6 +285,12 @@ func (h *Handler) ReorderStatuses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Statuses) > 0 {
+		if boardID, err := h.service.BoardIDByBoardStatusID(req.Statuses[0].BoardStatusID); err == nil {
+			h.hub.Broadcast(boardID, hub.Event{Type: "statuses_reordered", Data: req.Statuses})
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -297,7 +313,8 @@ func (h *Handler) SetDefaultStatus(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r)
 
-	if err := h.service.SetDefaultStatus(uint(boardStatusID), userID); err != nil {
+	boardID, err := h.service.SetDefaultStatus(uint(boardStatusID), userID)
+	if err != nil {
 		switch err.Error() {
 		case "access denied":
 			response.Error(w, http.StatusForbidden, err.Error())
@@ -309,6 +326,7 @@ func (h *Handler) SetDefaultStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(boardID, hub.Event{Type: "status_default_changed", Data: map[string]uint{"board_status_id": uint(boardStatusID)}})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -331,7 +349,8 @@ func (h *Handler) DeleteStatus(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r)
 
-	if err := h.service.DeleteStatus(uint(boardStatusID), userID); err != nil {
+	boardID, err := h.service.DeleteStatus(uint(boardStatusID), userID)
+	if err != nil {
 		switch err.Error() {
 		case "access denied":
 			response.Error(w, http.StatusForbidden, err.Error())
@@ -343,6 +362,7 @@ func (h *Handler) DeleteStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(boardID, hub.Event{Type: "status_deleted", Data: map[string]uint{"board_status_id": uint(boardStatusID)}})
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -398,7 +418,8 @@ func (h *Handler) DeleteMember(w http.ResponseWriter, r *http.Request) {
 
 	userID := middleware.GetUserID(r)
 
-	if err := h.service.DeleteMember(uint(boardMemberID), userID); err != nil {
+	boardID, err := h.service.DeleteMember(uint(boardMemberID), userID)
+	if err != nil {
 		switch err.Error() {
 		case "access denied":
 			response.Error(w, http.StatusForbidden, err.Error())
@@ -410,5 +431,45 @@ func (h *Handler) DeleteMember(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.hub.Broadcast(boardID, hub.Event{Type: "member_removed", Data: map[string]uint{"board_member_id": uint(boardMemberID)}})
 	w.WriteHeader(http.StatusOK)
+}
+
+// ServeWS godoc
+// @Summary WebSocket endpoint for real-time board events
+// @Description Connect via WS. Pass JWT as ?token=... query param.
+// @Description Receives events: task_created, task_updated, task_deleted,
+// @Description status_created, status_updated, status_deleted, statuses_reordered,
+// @Description status_default_changed, member_removed.
+// @Tags Board
+// @Param id    path   int    true "Board ID"
+// @Param token query  string true "JWT token"
+// @Router /boards/{id}/events [get]
+func (h *Handler) ServeWS(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+	boardID := uint(id)
+
+	token := r.URL.Query().Get("token")
+	userID, err := pkgjwt.ParseToken(token)
+	if err != nil {
+		response.Error(w, http.StatusUnauthorized, "invalid token")
+		return
+	}
+
+	isMember, err := h.service.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		response.Error(w, http.StatusForbidden, "access denied: not a board member")
+		return
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+
+	h.hub.Connect(conn, boardID)
 }

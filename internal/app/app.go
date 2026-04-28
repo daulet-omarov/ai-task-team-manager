@@ -7,6 +7,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/docs"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/config"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/database"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/auth"
@@ -73,17 +74,20 @@ func New() *App {
 	// mailer
 	m := mailer.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPFrom)
 
+	// shared hub for board + task real-time events
+	boardHub := hub.New()
+
 	// modules
 	authHandler := auth.NewModule(db, m, cfg.AppBaseURL)
 	employeeHandler := employee.NewModule(db)
-	boardHandler := board.NewModule(db)
-	taskHandler := task.NewModule(db)
+	boardHandler := board.NewModule(db, boardHub)
+	taskHandler := task.NewModule(db, boardHub)
 	inviteHandler := invite.NewModule(db)
 	uploadHandler := upload.NewHandler()
 	commentHandler := comment.NewModule(db)
 	attachmentHandler := attachment.NewModule(db)
 	notionHandler := notion.NewModule(db)
-	chatHandler := chat.NewModule(db)
+	chatHandler := chat.NewModule(db, boardHub)
 
 	// router
 	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler, cfg.AllowedOrigins)

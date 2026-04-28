@@ -104,23 +104,23 @@ func (s *Service) Delete(boardID uint, requesterID int64) error {
 	return s.repo.Delete(boardID)
 }
 
-func (s *Service) DeleteMember(boardMemberID uint, requesterID int64) error {
+func (s *Service) DeleteMember(boardMemberID uint, requesterID int64) (uint, error) {
 	log.Printf("board_member_id = %d, requester_id = %d", boardMemberID, requesterID)
 	member, err := s.repo.GetMemberByID(boardMemberID)
 	if err != nil {
-		return errors.New("member not found")
+		return 0, errors.New("member not found")
 	}
 
 	isOwner, err := s.repo.IsOwner(member.BoardID, requesterID)
 	if err != nil || !isOwner {
-		return errors.New("access denied")
+		return 0, errors.New("access denied")
 	}
 
 	if member.Role == "owner" {
-		return errors.New("cannot remove the board owner")
+		return 0, errors.New("cannot remove the board owner")
 	}
 
-	return s.repo.DeleteMember(boardMemberID)
+	return member.BoardID, s.repo.DeleteMember(boardMemberID)
 }
 
 func (s *Service) GetStatuses(boardID uint, userID int64) ([]*StatusResponse, error) {
@@ -140,44 +140,53 @@ func (s *Service) CreateStatus(userID int64, req CreateStatusRequest) (*StatusRe
 	return s.repo.UpsertStatus(req.BoardID, req.Title, code, req.Colour)
 }
 
-func (s *Service) UpdateStatus(boardStatusID uint, userID int64, req UpdateStatusRequest) (*StatusResponse, error) {
+func (s *Service) UpdateStatus(boardStatusID uint, userID int64, req UpdateStatusRequest) (uint, *StatusResponse, error) {
 	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 	if err != nil || boardID == 0 {
-		return nil, errors.New("status not found")
+		return 0, nil, errors.New("status not found")
 	}
 	isMember, err := s.repo.IsMember(boardID, userID)
 	if err != nil || !isMember {
-		return nil, errors.New("access denied")
+		return 0, nil, errors.New("access denied")
 	}
-	return s.repo.UpdateBoardStatus(boardStatusID, req.Title, req.Colour)
+	status, err := s.repo.UpdateBoardStatus(boardStatusID, req.Title, req.Colour)
+	return boardID, status, err
 }
 
 func (s *Service) ReorderStatuses(userID int64, req ReorderStatusesRequest) error {
 	return s.repo.ReorderStatuses(req.Statuses)
 }
 
-func (s *Service) SetDefaultStatus(boardStatusID uint, userID int64) error {
+func (s *Service) SetDefaultStatus(boardStatusID uint, userID int64) (uint, error) {
 	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 	if err != nil || boardID == 0 {
-		return errors.New("status not found")
+		return 0, errors.New("status not found")
 	}
 	isMember, err := s.repo.IsMember(boardID, userID)
 	if err != nil || !isMember {
-		return errors.New("access denied")
+		return 0, errors.New("access denied")
 	}
-	return s.repo.SetDefaultBoardStatus(boardStatusID)
+	return boardID, s.repo.SetDefaultBoardStatus(boardStatusID)
 }
 
-func (s *Service) DeleteStatus(boardStatusID uint, userID int64) error {
+func (s *Service) DeleteStatus(boardStatusID uint, userID int64) (uint, error) {
 	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 	if err != nil || boardID == 0 {
-		return errors.New("status not found")
+		return 0, errors.New("status not found")
 	}
 	isMember, err := s.repo.IsMember(boardID, userID)
 	if err != nil || !isMember {
-		return errors.New("access denied")
+		return 0, errors.New("access denied")
 	}
-	return s.repo.DeleteBoardStatus(boardStatusID)
+	return boardID, s.repo.DeleteBoardStatus(boardStatusID)
+}
+
+func (s *Service) IsMember(boardID uint, userID int64) (bool, error) {
+	return s.repo.IsMember(boardID, userID)
+}
+
+func (s *Service) BoardIDByBoardStatusID(boardStatusID uint) (uint, error) {
+	return s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 }
 
 // titleToCode converts "Code Review" → "code_review".

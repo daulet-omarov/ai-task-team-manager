@@ -878,11 +878,11 @@ const docTemplate = `{
         },
         "/boards/{boardId}/ws": {
             "get": {
-                "description": "Connect via WS. Pass JWT as ?token=... query param. Receives events: new_message, delete_message, update_poll.",
+                "description": "Connect via WS. Pass JWT as ?token=... query param.\nReceives all board events: new_message, delete_message, update_poll,\ntask_created, task_updated, task_deleted,\nstatus_created, status_updated, status_deleted, statuses_reordered,\nstatus_default_changed, member_removed.",
                 "tags": [
                     "Chat"
                 ],
-                "summary": "WebSocket endpoint for real-time chat",
+                "summary": "WebSocket endpoint for real-time board events (chat + tasks + statuses)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -987,6 +987,32 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/boards/{id}/events": {
+            "get": {
+                "description": "Connect via WS. Pass JWT as ?token=... query param.\nReceives events: task_created, task_updated, task_deleted,\nstatus_created, status_updated, status_deleted, statuses_reordered,\nstatus_default_changed, member_removed.",
+                "tags": [
+                    "Board"
+                ],
+                "summary": "WebSocket endpoint for real-time board events",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "JWT token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
             }
         },
         "/boards/{id}/members": {

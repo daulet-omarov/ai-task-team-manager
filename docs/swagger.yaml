@@ -1059,8 +1059,12 @@ paths:
       - Task
   /boards/{boardId}/ws:
     get:
-      description: 'Connect via WS. Pass JWT as ?token=... query param. Receives events:
-        new_message, delete_message, update_poll.'
+      description: |-
+        Connect via WS. Pass JWT as ?token=... query param.
+        Receives all board events: new_message, delete_message, update_poll,
+        task_created, task_updated, task_deleted,
+        status_created, status_updated, status_deleted, statuses_reordered,
+        status_default_changed, member_removed.
       parameters:
       - description: Board ID
         in: path
@@ -1073,7 +1077,7 @@ paths:
         required: true
         type: string
       responses: {}
-      summary: WebSocket endpoint for real-time chat
+      summary: WebSocket endpoint for real-time board events (chat + tasks + statuses)
       tags:
       - Chat
   /boards/{id}:
@@ -1129,6 +1133,28 @@ paths:
       security:
       - BearerAuth: []
       summary: Get board
+      tags:
+      - Board
+  /boards/{id}/events:
+    get:
+      description: |-
+        Connect via WS. Pass JWT as ?token=... query param.
+        Receives events: task_created, task_updated, task_deleted,
+        status_created, status_updated, status_deleted, statuses_reordered,
+        status_default_changed, member_removed.
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses: {}
+      summary: WebSocket endpoint for real-time board events
       tags:
       - Board
   /boards/{id}/members:

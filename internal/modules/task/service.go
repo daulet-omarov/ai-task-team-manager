@@ -128,18 +128,18 @@ func (s *Service) GetByID(id uint, userID int64, r *http.Request) (*TaskResponse
 	return resp, nil
 }
 
-func (s *Service) Delete(id uint, userID int64) error {
+func (s *Service) Delete(id uint, userID int64) (uint, error) {
 	t, err := s.repo.GetByID(id)
 	if err != nil {
-		return errors.New("task not found")
+		return 0, errors.New("task not found")
 	}
 
 	isMember, err := s.boardRepo.IsMember(t.BoardID, userID)
 	if err != nil || !isMember {
-		return errors.New("access denied")
+		return 0, errors.New("access denied")
 	}
 
-	return s.repo.Delete(id)
+	return t.BoardID, s.repo.Delete(id)
 }
 
 func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.Request) (*TaskResponse, error) {
