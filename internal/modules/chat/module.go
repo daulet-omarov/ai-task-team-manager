@@ -11,5 +11,6 @@ func NewModule(db *gorm.DB) *Handler {
 	boardRepo := board.NewRepository(db)
 	employeeRepo := employee.NewRepository(db)
 	service := NewService(repo, boardRepo, employeeRepo)
-	return NewHandler(service)
+	hub := NewHub()
+	return NewHandler(service, hub)
 }

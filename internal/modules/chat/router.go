@@ -6,6 +6,9 @@ import (
 )
 
 func RegisterRoutes(r chi.Router, h *Handler) {
+	// WS route authenticates via ?token= query param — must be outside JWTMiddleware.
+	r.Get("/boards/{boardId}/ws", h.ServeWS)
+
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTMiddleware)
 
