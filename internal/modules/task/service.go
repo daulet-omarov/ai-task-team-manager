@@ -12,6 +12,7 @@ import (
 // boardMemberChecker abstracts board.Repository to check membership without a hard import cycle.
 type boardMemberChecker interface {
 	IsMember(boardID uint, userID int64) (bool, error)
+	GetDefaultStatusIDForBoard(boardID uint) (uint, error)
 }
 
 type attachmentSaver interface {
@@ -57,16 +58,20 @@ func (s *Service) Create(boardID uint, reporterUserID int64, req CreateTaskReque
 		return nil, errors.New("access denied: not a board member")
 	}
 
-	todoStatusID, err := s.repo.GetStatusIDByCode("to_do")
-	if err != nil {
-		return nil, err
+	defaultStatusID, err := s.boardRepo.GetDefaultStatusIDForBoard(boardID)
+	if err != nil || defaultStatusID == 0 {
+		// fallback to global to_do
+		defaultStatusID, err = s.repo.GetStatusIDByCode("to_do")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	t := &models.Task{
 		BoardID:      boardID,
 		Title:        req.Title,
 		Description:  req.Description,
-		StatusID:     todoStatusID,
+		StatusID:     defaultStatusID,
 		PriorityID:   req.PriorityID,
 		DifficultyID: req.DifficultyID,
 		DeveloperID:  req.AssigneeID,

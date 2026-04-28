@@ -127,6 +127,11 @@ func (s *Service) Import(userID int64, req ImportRequest) (*ImportResult, error)
 		return emp.ID
 	}
 
+	// Set the first created status (position=1) as default for new tasks.
+	if err := s.boardRepo.SetDefaultFirstStatus(boardID); err != nil {
+		logger.Log.Warn("notion import: failed to set default status", zap.Error(err))
+	}
+
 	pages, err := client.queryDatabase(req.DatabaseID)
 	if err != nil {
 		return nil, fmt.Errorf("notion query error: %w", err)

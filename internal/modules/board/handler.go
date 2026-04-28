@@ -278,6 +278,40 @@ func (h *Handler) ReorderStatuses(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// SetDefaultStatus godoc
+// @Summary Set default board status
+// @Description Mark a board status as the default for new tasks; only one can be default per board
+// @Tags Board
+// @Security BearerAuth
+// @Param boardStatusId path int true "Board Status ID"
+// @Success 200 {string} string "ok"
+// @Failure 403 {string} string "access denied"
+// @Failure 404 {string} string "status not found"
+// @Router /statuses/{boardStatusId}/set-default [patch]
+func (h *Handler) SetDefaultStatus(w http.ResponseWriter, r *http.Request) {
+	boardStatusID, err := strconv.ParseUint(chi.URLParam(r, "boardStatusId"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board status id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.SetDefaultStatus(uint(boardStatusID), userID); err != nil {
+		switch err.Error() {
+		case "access denied":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "status not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		default:
+			response.Error(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // DeleteStatus godoc
 // @Summary Delete board status
 // @Description Remove a status from a board by board_status_id; caller must be a member

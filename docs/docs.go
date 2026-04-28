@@ -1843,6 +1843,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/statuses/{boardStatusId}/set-default": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mark a board status as the default for new tasks; only one can be default per board",
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Set default board status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board Status ID",
+                        "name": "boardStatusId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "status not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/tasks/{taskId}": {
             "get": {
                 "security": [
@@ -2480,6 +2523,9 @@ const docTemplate = `{
                 },
                 "colour": {
                     "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
