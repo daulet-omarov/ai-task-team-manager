@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	_ "github.com/daulet-omarov/ai-task-team-manager/docs"
+	"github.com/daulet-omarov/ai-task-team-manager/docs"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/config"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/database"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/logger"
@@ -41,6 +41,8 @@ func New() *App {
 
 	// load configs
 	cfg := config.Load()
+
+	docs.SwaggerInfo.Host = cfg.AppUrl
 
 	// init JWT
 	jwt.Init(cfg.JWTSecret)
