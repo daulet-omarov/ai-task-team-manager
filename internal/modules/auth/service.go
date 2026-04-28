@@ -144,7 +144,7 @@ func (s *Service) ForgotPassword(email string) error {
 	}
 
 	//resetURL := s.appBaseURL + "/auth/reset-password?token=" + token
-	frontURL := "http://192.168.100.23:5173/reset-password?token=" + token
+	frontURL := "https://oyster-app-upgre.ondigitalocean.app?token=" + token
 	go s.mailer.SendPasswordResetEmail(user.Email, frontURL)
 
 	return nil
