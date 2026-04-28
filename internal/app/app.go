@@ -46,12 +46,13 @@ func New() *App {
 	jwt.Init(cfg.JWTSecret)
 
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		cfg.DBUser,
 		cfg.DBPassword,
 		cfg.DBHost,
 		cfg.DBPort,
 		cfg.DBName,
+		cfg.DBSSLMode,
 	)
 
 	// singleton DB
@@ -73,8 +74,11 @@ func New() *App {
 	chatHandler := chat.NewModule(db)
 
 	// router
-	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler)
+	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler, cfg.AllowedOrigins)
 
+	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	server := &http.Server{

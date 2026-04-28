@@ -1,0 +1,64 @@
+name: octopus-app
+region: blr
+
+services:
+  - name: ai-task-team-manager
+    github:
+      repo: daulet-omarov/ai-task-team-manager
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xs
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 30
+      period_seconds: 10
+      failure_threshold: 3
+    envs:
+      - key: APP_PORT
+        value: "8080"
+      - key: APP_BASE_URL
+        value: ${APP_URL}
+      - key: DB_HOST
+        value: ${dev-db-948909.HOSTNAME}
+        scope: RUN_AND_BUILD_TIME
+      - key: DB_PORT
+        value: ${dev-db-948909.PORT}
+        scope: RUN_AND_BUILD_TIME
+      - key: DB_USER
+        value: ${dev-db-948909.USERNAME}
+        scope: RUN_AND_BUILD_TIME
+      - key: DB_PASSWORD
+        value: ${dev-db-948909.PASSWORD}
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: DB_NAME
+        value: ${dev-db-948909.DATABASE}
+        scope: RUN_AND_BUILD_TIME
+      - key: DB_SSLMODE
+        value: require
+      - key: JWT_SECRET
+        value: "REPLACE_ME_WITH_STRONG_SECRET"
+        type: SECRET
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: "REPLACE_ME"
+        type: SECRET
+      - key: SMTP_PASSWORD
+        value: "REPLACE_ME"
+        type: SECRET
+      - key: SMTP_FROM
+        value: "REPLACE_ME"
+        type: SECRET
+      - key: ALLOWED_ORIGINS
+        value: "https://REPLACE_WITH_YOUR_FRONTEND_URL"
+
+databases:
+  - name: dev-db-948909
+    engine: PG
+    version: "17"

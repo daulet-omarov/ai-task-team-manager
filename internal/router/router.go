@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/daulet-omarov/ai-task-team-manager/internal/middleware"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/attachment"
@@ -29,15 +30,13 @@ func SetupRouter(
 	attachmentHandler *attachment.Handler,
 	notionHandler *notion.Handler,
 	chatHandler *chat.Handler,
+	allowedOrigins string,
 ) *chi.Mux {
 
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{
-			"http://192.168.100.23:5173",
-			"https://192.168.100.23:5173",
-		},
+		AllowedOrigins: strings.Split(allowedOrigins, ","),
 		AllowedMethods: []string{
 			"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS",
 		},
