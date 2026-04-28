@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"time"
 
@@ -11,6 +13,12 @@ import (
 type responseWriter struct {
 	http.ResponseWriter
 	status int
+}
+
+// Hijack forwards the call to the underlying ResponseWriter so that WebSocket
+// upgrades (which require http.Hijacker) work through this middleware.
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return rw.ResponseWriter.(http.Hijacker).Hijack()
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
