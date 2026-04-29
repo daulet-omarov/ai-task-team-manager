@@ -16,5 +16,6 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Delete("/", h.Delete)
 		r.Get("/exists", h.Exists)
 		r.Get("/{id}/profile", h.GetProfile)
+		r.Get("/{id}/achievements", h.GetAchievements)
 	})
 }

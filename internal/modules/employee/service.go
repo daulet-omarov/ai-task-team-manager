@@ -247,6 +247,116 @@ func calcMaxStreak(rows []dailyActivityRow) int {
 	return max
 }
 
+func (s *Service) GetAchievements(employeeID uint) ([]AchievementResponse, error) {
+	counts, err := s.repo.getAchievementCounts(employeeID)
+	if err != nil {
+		return nil, err
+	}
+	dates, err := s.repo.getActivityDates(employeeID)
+	if err != nil {
+		return nil, err
+	}
+	return computeAchievements(counts, dates), nil
+}
+
+func computeAchievements(c *achievementCountRow, dates []string) []AchievementResponse {
+	maxStreak := calcMaxStreakFromDates(dates)
+	totalActiveDays := len(dates)
+	streakCount := countStreaks(dates)
+
+	lvl := func(val, l1, l2, l3 int64) int {
+		switch {
+		case val >= l3:
+			return 3
+		case val >= l2:
+			return 2
+		case val >= l1:
+			return 1
+		default:
+			return 0
+		}
+	}
+
+	results := []AchievementResponse{
+		{"closer", lvl(c.Closer, 10, 50, 200)},
+		{"finisher", 0}, // no due-date field in tasks table
+		{"challenger", lvl(c.Challenger, 10, 50, 200)},
+		{"elite", lvl(c.Elite, 5, 25, 100)},
+		{"perfectionist", lvl(c.Perfectionist, 5, 20, 50)},
+		{"cleanworker", lvl(c.Cleanworker, 10, 50, 150)},
+		{"consistency", lvl(int64(maxStreak), 3, 7, 11)},
+		{"unstoppable", lvl(int64(totalActiveDays), 50, 100, 200)},
+		{"onfire", lvl(int64(streakCount), 3, 7, 30)},
+		{"teamplayer", lvl(c.Teamplayer, 5, 15, 50)},
+		{"reviewer", lvl(c.Reviewer, 10, 50, 150)},
+		{"communicator", lvl(c.Communicator, 50, 200, 1000)},
+		{"pollmaster", lvl(c.Pollmaster, 10, 100, 1000)},
+		{"influencer", lvl(c.Influencer, 50, 300, 1000)},
+		{"voicepioneer", lvl(c.Voicepioneer, 20, 100, 1000)},
+		{"broadcaster", lvl(c.Broadcaster, 20, 100, 1000)},
+	}
+
+	level3Count, anyLevelCount := 0, 0
+	for _, a := range results {
+		if a.Level >= 3 {
+			level3Count++
+		}
+		if a.Level >= 1 {
+			anyLevelCount++
+		}
+	}
+
+	prestigeLevel := func(unlocked bool) int {
+		if unlocked {
+			return 4
+		}
+		return 0
+	}
+
+	results = append(results,
+		AchievementResponse{"legend", prestigeLevel(level3Count >= 10)},
+		AchievementResponse{"master", prestigeLevel(anyLevelCount >= 25)},
+		AchievementResponse{"grandmaster", prestigeLevel(anyLevelCount >= 50)},
+	)
+
+	return results
+}
+
+func calcMaxStreakFromDates(dates []string) int {
+	if len(dates) == 0 {
+		return 0
+	}
+	max, cur := 1, 1
+	for i := 1; i < len(dates); i++ {
+		prev, _ := time.Parse("2006-01-02", dates[i-1])
+		curr, _ := time.Parse("2006-01-02", dates[i])
+		if curr.Sub(prev) == 24*time.Hour {
+			cur++
+			if cur > max {
+				max = cur
+			}
+		} else {
+			cur = 1
+		}
+	}
+	return max
+}
+
+func countStreaks(dates []string) int {
+	if len(dates) == 0 {
+		return 0
+	}
+	count := 1
+	for i := 1; i < len(dates); i++ {
+		prev, _ := time.Parse("2006-01-02", dates[i-1])
+		curr, _ := time.Parse("2006-01-02", dates[i])
+		if curr.Sub(prev) > 24*time.Hour {
+			count++
+		}
+	}
+	return count
+}
+
 // --- helper ---
 
 func toResponse(e *models.Employee) *EmployeeResponse {

@@ -254,6 +254,82 @@ func (r *Repository) findMinAffectedDate(employeeID uint, since time.Time) (stri
 	return *result.MinDate, true, nil
 }
 
+type achievementCountRow struct {
+	Closer        int64 `gorm:"column:closer"`
+	Challenger    int64 `gorm:"column:challenger"`
+	Elite         int64 `gorm:"column:elite"`
+	Perfectionist int64 `gorm:"column:perfectionist"`
+	Cleanworker   int64 `gorm:"column:cleanworker"`
+	Teamplayer    int64 `gorm:"column:teamplayer"`
+	Reviewer      int64 `gorm:"column:reviewer"`
+	Communicator  int64 `gorm:"column:communicator"`
+	Pollmaster    int64 `gorm:"column:pollmaster"`
+	Influencer    int64 `gorm:"column:influencer"`
+	Voicepioneer  int64 `gorm:"column:voicepioneer"`
+	Broadcaster   int64 `gorm:"column:broadcaster"`
+}
+
+func (r *Repository) getAchievementCounts(employeeID uint) (*achievementCountRow, error) {
+	var row achievementCountRow
+	err := r.db.Raw(`
+		SELECT
+		  (SELECT COUNT(*) FROM tasks t
+		   JOIN statuses s ON s.id = t.status_id
+		   WHERE t.developer_id = @emp AND s.code = 'done') AS closer,
+
+		  (SELECT COUNT(*) FROM tasks t
+		   JOIN statuses s ON s.id = t.status_id
+		   JOIN difficulties d ON d.id = t.difficulty_id
+		   WHERE t.developer_id = @emp AND s.code = 'done' AND d.code = 'hard') AS challenger,
+
+		  (SELECT COUNT(*) FROM tasks t
+		   JOIN statuses s ON s.id = t.status_id
+		   JOIN difficulties d ON d.id = t.difficulty_id
+		   WHERE t.developer_id = @emp AND s.code = 'done' AND d.code = 'very_hard') AS elite,
+
+		  (SELECT COUNT(*) FROM tasks t
+		   JOIN statuses s ON s.id = t.status_id
+		   WHERE t.developer_id = @emp AND s.code = 'done') AS perfectionist,
+
+		  (SELECT COUNT(DISTINCT t.id) FROM tasks t
+		   WHERE t.developer_id = @emp AND t.description != ''
+		     AND EXISTS (SELECT 1 FROM attachments a WHERE a.task_id = t.id)) AS cleanworker,
+
+		  (SELECT COUNT(DISTINCT developer_id) FROM tasks
+		   WHERE reporter_id = @emp) AS teamplayer,
+
+		  (SELECT COUNT(*) FROM tasks WHERE tester_id = @emp) AS reviewer,
+
+		  (SELECT COUNT(*) FROM board_chat_messages WHERE author_id = @emp) AS communicator,
+
+		  (SELECT COUNT(*) FROM board_polls p
+		   JOIN board_chat_messages m ON m.id = p.message_id
+		   WHERE m.author_id = @emp) AS pollmaster,
+
+		  (SELECT COUNT(*) FROM board_chat_messages r
+		   JOIN board_chat_messages orig ON orig.id = r.reply_to_id
+		   WHERE orig.author_id = @emp) AS influencer,
+
+		  (SELECT COUNT(*) FROM board_chat_attachments a
+		   JOIN board_chat_messages m ON m.id = a.message_id
+		   WHERE m.author_id = @emp AND a.mime_type LIKE 'audio/%') AS voicepioneer,
+
+		  (SELECT COUNT(*) FROM board_chat_attachments a
+		   JOIN board_chat_messages m ON m.id = a.message_id
+		   WHERE m.author_id = @emp AND a.mime_type LIKE 'video/%') AS broadcaster
+	`, map[string]any{"emp": employeeID}).Scan(&row).Error
+	return &row, err
+}
+
+func (r *Repository) getActivityDates(employeeID uint) ([]string, error) {
+	var dates []string
+	err := r.db.Raw(
+		"SELECT TO_CHAR(date, 'YYYY-MM-DD') FROM employee_contributions WHERE employee_id = ? ORDER BY date",
+		employeeID,
+	).Scan(&dates).Error
+	return dates, err
+}
+
 // touchActivities refreshes updated_at for all stored rows of an employee
 // so the freshness check doesn't re-fire when nothing actually changed.
 func (r *Repository) touchActivities(employeeID uint) error {
