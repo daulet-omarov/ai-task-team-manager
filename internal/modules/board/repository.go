@@ -58,20 +58,20 @@ func (r *Repository) IsMember(boardID uint, userID int64) (bool, error) {
 }
 
 // AddDefaultStatuses links TO DO (pos 1), IN PROGRESS (pos 2), DONE (pos 3) to the board.
-// The first status (to_do, position=1) is marked as is_default=true.
+// The first status (to_do, position=1) is marked as is_default=true and is_reopen=true.
+// The last status (done, position=3) is marked as is_completed=true.
 func (r *Repository) AddDefaultStatuses(boardID uint) error {
 	return r.db.Exec(`
-		INSERT INTO board_statuses (board_id, status_id, position, is_default)
+		INSERT INTO board_statuses (board_id, status_id, position, is_default, is_completed, is_reopen)
 		SELECT ?, s.id,
 		       CASE s.code
 		           WHEN 'to_do'       THEN 1
 		           WHEN 'in_progress' THEN 2
 		           WHEN 'done'        THEN 3
 		       END,
-		       CASE s.code
-		           WHEN 'to_do' THEN true
-		           ELSE false
-		       END
+		       CASE s.code WHEN 'to_do' THEN true ELSE false END,
+		       CASE s.code WHEN 'done'  THEN true ELSE false END,
+		       CASE s.code WHEN 'to_do' THEN true ELSE false END
 		FROM statuses s
 		WHERE s.code IN ('to_do', 'in_progress', 'done')
 		ON CONFLICT (status_id, board_id) DO NOTHING
@@ -82,7 +82,8 @@ func (r *Repository) AddDefaultStatuses(boardID uint) error {
 func (r *Repository) GetBoardStatuses(boardID uint) ([]*StatusResponse, error) {
 	var rows []*StatusResponse
 	err := r.db.Raw(`
-		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour, bs.is_default
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour,
+		       bs.is_default, bs.is_completed, bs.is_reopen
 		FROM board_statuses bs
 		JOIN statuses s ON s.id = bs.status_id
 		WHERE bs.board_id = ?
@@ -176,7 +177,8 @@ func (r *Repository) UpdateBoardStatus(boardStatusID uint, title, colour string)
 
 	var row StatusResponse
 	err := r.db.Raw(`
-		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour, bs.is_default
+		SELECT bs.id AS board_status_id, s.id AS status_id, s.name, s.code, bs.position, bs.colour,
+		       bs.is_default, bs.is_completed, bs.is_reopen
 		FROM board_statuses bs
 		JOIN statuses s ON s.id = bs.status_id
 		WHERE bs.id = ?
@@ -308,6 +310,52 @@ func (r *Repository) SetDefaultBoardStatus(boardStatusID uint) error {
 		return err
 	}
 	if err := tx.Exec("UPDATE board_statuses SET is_default = true WHERE id = ?", boardStatusID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+// SetCompletedBoardStatus marks the given board_status as the completed status for the board
+// and clears the flag on all other statuses of the same board.
+func (r *Repository) SetCompletedBoardStatus(boardStatusID uint) error {
+	var boardID uint
+	if err := r.db.Raw("SELECT board_id FROM board_statuses WHERE id = ?", boardStatusID).Scan(&boardID).Error; err != nil {
+		return err
+	}
+	if boardID == 0 {
+		return fmt.Errorf("board status not found")
+	}
+
+	tx := r.db.Begin()
+	if err := tx.Exec("UPDATE board_statuses SET is_completed = false WHERE board_id = ?", boardID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Exec("UPDATE board_statuses SET is_completed = true WHERE id = ?", boardStatusID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+// SetReopenBoardStatus marks the given board_status as the reopen status for the board
+// and clears the flag on all other statuses of the same board.
+func (r *Repository) SetReopenBoardStatus(boardStatusID uint) error {
+	var boardID uint
+	if err := r.db.Raw("SELECT board_id FROM board_statuses WHERE id = ?", boardStatusID).Scan(&boardID).Error; err != nil {
+		return err
+	}
+	if boardID == 0 {
+		return fmt.Errorf("board status not found")
+	}
+
+	tx := r.db.Begin()
+	if err := tx.Exec("UPDATE board_statuses SET is_reopen = false WHERE board_id = ?", boardID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Exec("UPDATE board_statuses SET is_reopen = true WHERE id = ?", boardStatusID).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

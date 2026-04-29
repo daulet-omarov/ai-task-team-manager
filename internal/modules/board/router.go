@@ -23,6 +23,8 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Post("/statuses", h.CreateStatus)
 		r.Patch("/statuses/reorder", h.ReorderStatuses)
 		r.Patch("/statuses/{boardStatusId}/set-default", h.SetDefaultStatus)
+		r.Patch("/statuses/{boardStatusId}/set-completed", h.SetCompletedStatus)
+		r.Patch("/statuses/{boardStatusId}/set-reopen", h.SetReopenStatus)
 		r.Patch("/statuses/{boardStatusId}", h.UpdateStatus)
 		r.Delete("/statuses/{boardStatusId}", h.DeleteStatus)
 	})

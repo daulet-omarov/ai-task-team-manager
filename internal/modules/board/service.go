@@ -180,6 +180,30 @@ func (s *Service) SetDefaultStatus(boardStatusID uint, userID int64) (uint, erro
 	return boardID, s.repo.SetDefaultBoardStatus(boardStatusID)
 }
 
+func (s *Service) SetCompletedStatus(boardStatusID uint, userID int64) (uint, error) {
+	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
+	if err != nil || boardID == 0 {
+		return 0, errors.New("status not found")
+	}
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return 0, errors.New("access denied")
+	}
+	return boardID, s.repo.SetCompletedBoardStatus(boardStatusID)
+}
+
+func (s *Service) SetReopenStatus(boardStatusID uint, userID int64) (uint, error) {
+	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
+	if err != nil || boardID == 0 {
+		return 0, errors.New("status not found")
+	}
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return 0, errors.New("access denied")
+	}
+	return boardID, s.repo.SetReopenBoardStatus(boardStatusID)
+}
+
 func (s *Service) DeleteStatus(boardStatusID uint, userID int64) (uint, error) {
 	boardID, err := s.repo.GetBoardIDByBoardStatusID(boardStatusID)
 	if err != nil || boardID == 0 {

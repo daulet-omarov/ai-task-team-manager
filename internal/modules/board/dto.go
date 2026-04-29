@@ -52,6 +52,8 @@ type StatusResponse struct {
 	Position      int    `json:"position"`
 	Colour        string `json:"colour"`
 	IsDefault     bool   `json:"is_default"`
+	IsCompleted   bool   `json:"is_completed"`
+	IsReopen      bool   `json:"is_reopen"`
 }
 
 type ReorderStatusesRequest struct {
