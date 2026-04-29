@@ -93,6 +93,17 @@ func (s *Service) GetMembers(boardID uint, userID int64) ([]*MemberResponse, err
 	return s.repo.GetMembersWithDetails(boardID)
 }
 
+func (s *Service) UpdateBoard(boardID uint, requesterID int64, req UpdateBoardRequest) error {
+	isOwner, err := s.repo.IsOwner(boardID, requesterID)
+	if err != nil {
+		return errors.New("board not found")
+	}
+	if !isOwner {
+		return errors.New("access denied")
+	}
+	return s.repo.UpdateBoard(boardID, req.Name, req.Description)
+}
+
 func (s *Service) Delete(boardID uint, requesterID int64) error {
 	isOwner, err := s.repo.IsOwner(boardID, requesterID)
 	if err != nil {

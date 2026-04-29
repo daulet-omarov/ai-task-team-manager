@@ -108,6 +108,50 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, board)
 }
 
+// UpdateBoard godoc
+// @Summary Update board
+// @Description Update board name and/or description; caller must be the board owner
+// @Tags Board
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path int true "Board ID"
+// @Param request body UpdateBoardRequest true "Fields to update"
+// @Success 200 {string} string "updated"
+// @Failure 400 {string} string "bad request"
+// @Failure 403 {string} string "access denied"
+// @Failure 404 {string} string "board not found"
+// @Router /boards/{id} [patch]
+func (h *Handler) UpdateBoard(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	var req UpdateBoardRequest
+	if err := request.DecodeAndValidate(r, &req); err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.service.UpdateBoard(uint(id), userID, req); err != nil {
+		switch err.Error() {
+		case "access denied":
+			response.Error(w, http.StatusForbidden, err.Error())
+		case "board not found":
+			response.Error(w, http.StatusNotFound, err.Error())
+		default:
+			response.Error(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Delete godoc
 // @Summary Delete board
 // @Description Delete a board by ID; caller must be the board owner
