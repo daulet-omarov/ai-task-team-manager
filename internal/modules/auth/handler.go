@@ -57,7 +57,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Param request body LoginRequest true "Login request"
 // @Success 200 {object} map[string]string "token response"
 // @Failure 400 {string} string "bad request"
-// @Failure 401 {string} string "invalid credentials"
+// @Failure 422 {string} string "invalid credentials"
 // @Router /auth/login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
@@ -72,7 +72,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	res, err := h.service.Login(req.Email, req.Password)
 	if err != nil {
 		logger.Log.Error(err.Error())
-		response.Error(w, http.StatusUnauthorized, "invalid credentials")
+		response.Error(w, http.StatusUnprocessableEntity, "invalid credentials")
 		return
 	}
 

@@ -119,6 +119,19 @@ definitions:
       user_id:
         type: integer
     type: object
+  board.MemberStatsResponse:
+    properties:
+      completed_tasks:
+        type: integer
+      hard_tasks:
+        type: integer
+      messages_sent:
+        type: integer
+      polls_created:
+        type: integer
+      user_id:
+        type: integer
+    type: object
   board.ReorderStatusesRequest:
     properties:
       statuses:
@@ -156,6 +169,16 @@ definitions:
         type: integer
       status_id:
         type: integer
+    type: object
+  board.UpdateBoardRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
     type: object
   board.UpdateStatusRequest:
     properties:
@@ -286,6 +309,13 @@ definitions:
         type: string
     required:
     - content
+    type: object
+  employee.AchievementResponse:
+    properties:
+      achievement_code:
+        type: string
+      level:
+        type: integer
     type: object
   employee.ActivitiesResponse:
     properties:
@@ -604,7 +634,7 @@ paths:
           description: bad request
           schema:
             type: string
-        "401":
+        "422":
           description: invalid credentials
           schema:
             type: string
@@ -1135,6 +1165,47 @@ paths:
       summary: Get board
       tags:
       - Board
+    patch:
+      consumes:
+      - application/json
+      description: Update board name and/or description; caller must be the board
+        owner
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/board.UpdateBoardRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: updated
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+        "404":
+          description: board not found
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update board
+      tags:
+      - Board
   /boards/{id}/events:
     get:
       description: |-
@@ -1155,6 +1226,38 @@ paths:
         type: string
       responses: {}
       summary: WebSocket endpoint for real-time board events
+      tags:
+      - Board
+  /boards/{id}/member-stats:
+    get:
+      description: 'Returns per-member activity counts scoped to this board: hard
+        tasks completed, total tasks completed, polls created, messages sent.'
+      parameters:
+      - description: Board ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/board.MemberStatsResponse'
+            type: array
+        "400":
+          description: invalid board id
+          schema:
+            type: string
+        "403":
+          description: access denied
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get board member stats
       tags:
       - Board
   /boards/{id}/members:
@@ -1394,6 +1497,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Update employee profile
+      tags:
+      - Employee
+  /employees/{id}/achievements:
+    get:
+      description: Returns the unlocked level for all 19 achievements for the given
+        employee. Level 0 = locked, 1/2/3 = bronze/silver/gold, 4 = prestige.
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/employee.AchievementResponse'
+            type: array
+        "400":
+          description: invalid id
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get employee achievement progress
       tags:
       - Employee
   /employees/{id}/profile:
@@ -2013,6 +2148,21 @@ paths:
       summary: Upload photo
       tags:
       - Upload
+  /users/ws:
+    get:
+      description: |-
+        Connect via WS. Pass JWT as ?token=... query param.
+        Receives events: invite_received.
+      parameters:
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses: {}
+      summary: WebSocket endpoint for real-time user events (invitations)
+      tags:
+      - Invite
 securityDefinitions:
   BearerAuth:
     description: Enter the token with the `Bearer ` prefix, e.g. "Bearer abcde12345".
