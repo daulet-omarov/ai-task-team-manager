@@ -300,6 +300,33 @@ func (r *Repository) SetDefaultBoardStatus(boardStatusID uint) error {
 	return tx.Commit().Error
 }
 
+func (r *Repository) GetMemberStats(boardID uint) ([]*MemberStatsResponse, error) {
+	var rows []*MemberStatsResponse
+	err := r.db.Raw(`
+		SELECT
+		  bm.user_id,
+		  COUNT(DISTINCT t.id) FILTER (WHERE s.code = 'done' AND d.code = 'hard') AS hard_tasks,
+		  COUNT(DISTINCT t.id) FILTER (WHERE s.code = 'done')                     AS completed_tasks,
+		  COUNT(DISTINCT p.id)                                                     AS polls_created,
+		  COUNT(DISTINCT m.id)                                                     AS messages_sent
+		FROM board_members bm
+		LEFT JOIN tasks t
+		  ON t.developer_id = bm.user_id AND t.board_id = bm.board_id
+		LEFT JOIN statuses s
+		  ON s.id = t.status_id
+		LEFT JOIN difficulties d
+		  ON d.id = t.difficulty_id
+		LEFT JOIN board_chat_messages m
+		  ON m.author_id = bm.user_id AND m.board_id = bm.board_id
+		LEFT JOIN board_polls p
+		  ON p.message_id = m.id
+		WHERE bm.board_id = ?
+		GROUP BY bm.user_id
+		ORDER BY bm.user_id
+	`, boardID).Scan(&rows).Error
+	return rows, err
+}
+
 // GetDefaultStatusIDForBoard returns the status_id of the default board status.
 // Falls back to the status with position=1 if none is marked default.
 func (r *Repository) GetDefaultStatusIDForBoard(boardID uint) (uint, error) {
