@@ -5,6 +5,11 @@ type CreateBoardRequest struct {
 	Description string `json:"description" validate:"max=500"`
 }
 
+type UpdateBoardRequest struct {
+	Name        string `json:"name"        validate:"omitempty,min=1,max=100"`
+	Description string `json:"description" validate:"omitempty,max=500"`
+}
+
 type BoardResponse struct {
 	ID          uint   `json:"id"`
 	Name        string `json:"name"`

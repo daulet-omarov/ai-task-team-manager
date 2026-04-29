@@ -238,6 +238,20 @@ func (r *Repository) GetMembersWithDetails(boardID uint) ([]*MemberResponse, err
 	return rows, err
 }
 
+func (r *Repository) UpdateBoard(boardID uint, name, description string) error {
+	updates := map[string]any{}
+	if name != "" {
+		updates["name"] = name
+	}
+	if description != "" {
+		updates["description"] = description
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return r.db.Model(&models.Board{}).Where("id = ?", boardID).Updates(updates).Error
+}
+
 // Delete removes a board by ID.
 func (r *Repository) Delete(boardID uint) error {
 	return r.db.Delete(&models.Board{}, boardID).Error
