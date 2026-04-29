@@ -48,3 +48,8 @@ type ProfileResponse struct {
 	Profile    *EmployeeResponse   `json:"profile"`
 	Activities *ActivitiesResponse `json:"activities"`
 }
+
+type AchievementResponse struct {
+	AchievementCode string `json:"achievement_code"`
+	Level           int    `json:"level"`
+}

@@ -269,6 +269,34 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, result)
 }
 
+// GetAchievements godoc
+// @Summary Get employee achievement progress
+// @Description Returns the unlocked level for all 19 achievements for the given employee. Level 0 = locked, 1/2/3 = bronze/silver/gold, 4 = prestige.
+// @Tags Employee
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Employee ID"
+// @Success 200 {array} AchievementResponse
+// @Failure 400 {string} string "invalid id"
+// @Failure 500 {string} string "server error"
+// @Router /employees/{id}/achievements [get]
+func (h *Handler) GetAchievements(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	result, err := h.service.GetAchievements(id)
+	if err != nil {
+		logger.Log.Error(err.Error())
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, result)
+}
+
 // ExistsEmployee godoc
 // @Summary Check if employee profile exists
 // @Tags Employee
