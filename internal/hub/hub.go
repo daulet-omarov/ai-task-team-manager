@@ -21,10 +21,11 @@ type Event struct {
 }
 
 type client struct {
-	hub     *Hub
 	conn    *websocket.Conn
 	boardID uint
+	userID  int64
 	send    chan []byte
+	unreg   chan<- *client
 }
 
 func (c *client) writePump() {
@@ -60,7 +61,7 @@ func (c *client) writePump() {
 
 func (c *client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		c.unreg <- c
 		c.conn.Close()
 	}()
 	c.conn.SetReadLimit(maxMsgSize)
@@ -76,19 +77,25 @@ func (c *client) readPump() {
 	}
 }
 
-// Hub manages WebSocket connections grouped by boardID.
+// Hub manages WebSocket connections grouped by board room or user room.
 type Hub struct {
-	mu         sync.RWMutex
-	rooms      map[uint]map[*client]struct{}
-	register   chan *client
-	unregister chan *client
+	mu             sync.RWMutex
+	rooms          map[uint]map[*client]struct{}
+	userRooms      map[int64]map[*client]struct{}
+	register       chan *client
+	unregister     chan *client
+	userRegister   chan *client
+	userUnregister chan *client
 }
 
 func New() *Hub {
 	h := &Hub{
-		rooms:      make(map[uint]map[*client]struct{}),
-		register:   make(chan *client, 64),
-		unregister: make(chan *client, 64),
+		rooms:          make(map[uint]map[*client]struct{}),
+		userRooms:      make(map[int64]map[*client]struct{}),
+		register:       make(chan *client, 64),
+		unregister:     make(chan *client, 64),
+		userRegister:   make(chan *client, 64),
+		userUnregister: make(chan *client, 64),
 	}
 	go h.run()
 	return h
@@ -108,6 +115,24 @@ func (h *Hub) run() {
 		case c := <-h.unregister:
 			h.mu.Lock()
 			if room, ok := h.rooms[c.boardID]; ok {
+				if _, exists := room[c]; exists {
+					delete(room, c)
+					close(c.send)
+				}
+			}
+			h.mu.Unlock()
+
+		case c := <-h.userRegister:
+			h.mu.Lock()
+			if h.userRooms[c.userID] == nil {
+				h.userRooms[c.userID] = make(map[*client]struct{})
+			}
+			h.userRooms[c.userID][c] = struct{}{}
+			h.mu.Unlock()
+
+		case c := <-h.userUnregister:
+			h.mu.Lock()
+			if room, ok := h.userRooms[c.userID]; ok {
 				if _, exists := room[c]; exists {
 					delete(room, c)
 					close(c.send)
@@ -135,16 +160,47 @@ func (h *Hub) Broadcast(boardID uint, event Event) {
 	}
 }
 
+// BroadcastToUser sends an Event to all connections open for the given userID.
+func (h *Hub) BroadcastToUser(userID int64, event Event) {
+	data, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+	h.mu.RLock()
+	room := h.userRooms[userID]
+	h.mu.RUnlock()
+	for c := range room {
+		select {
+		case c.send <- data:
+		default:
+		}
+	}
+}
+
 // Connect upgrades conn to a WebSocket client in the given board room and
 // blocks until the connection is closed.
 func (h *Hub) Connect(conn *websocket.Conn, boardID uint) {
 	c := &client{
-		hub:     h,
 		conn:    conn,
 		boardID: boardID,
 		send:    make(chan []byte, 256),
+		unreg:   h.unregister,
 	}
 	h.register <- c
+	go c.writePump()
+	c.readPump()
+}
+
+// ConnectUser upgrades conn to a WebSocket client in the given user room and
+// blocks until the connection is closed.
+func (h *Hub) ConnectUser(conn *websocket.Conn, userID int64) {
+	c := &client{
+		conn:   conn,
+		userID: userID,
+		send:   make(chan []byte, 256),
+		unreg:  h.userUnregister,
+	}
+	h.userRegister <- c
 	go c.writePump()
 	c.readPump()
 }

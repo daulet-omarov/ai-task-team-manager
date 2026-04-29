@@ -15,29 +15,30 @@ func NewService(repo *Repository) *Service {
 }
 
 // Invite sends a board invitation. Only the board owner can invite users.
-func (s *Service) Invite(boardID uint, inviterID int64, req CreateInviteRequest) error {
+// Returns the created invitation so the caller can broadcast it to the invitee.
+func (s *Service) Invite(boardID uint, inviterID int64, req CreateInviteRequest) (*InviteResponse, error) {
 	isOwner, err := s.repo.IsOwner(boardID, inviterID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !isOwner {
-		return errors.New("only the board owner can send invitations")
+		return nil, errors.New("only the board owner can send invitations")
 	}
 
 	isMember, err := s.repo.IsMember(boardID, req.UserID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if isMember {
-		return errors.New("user is already a board member")
+		return nil, errors.New("user is already a board member")
 	}
 
 	exists, err := s.repo.ExistsPending(boardID, req.UserID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if exists {
-		return errors.New("invitation already pending")
+		return nil, errors.New("invitation already pending")
 	}
 
 	inv := &models.Invite{
@@ -47,7 +48,16 @@ func (s *Service) Invite(boardID uint, inviterID int64, req CreateInviteRequest)
 		Status:    models.InviteStatusPending,
 	}
 
-	return s.repo.Create(inv)
+	if err := s.repo.Create(inv); err != nil {
+		return nil, err
+	}
+
+	// Reload to get Board name populated.
+	full, err := s.repo.GetByID(inv.ID)
+	if err != nil {
+		return nil, err
+	}
+	return toInviteResponse(full), nil
 }
 
 // GetUserInvites returns all pending invitations for the given user.
@@ -59,38 +69,43 @@ func (s *Service) GetUserInvites(userID int64) ([]*InviteResponse, error) {
 
 	result := make([]*InviteResponse, 0, len(invites))
 	for _, inv := range invites {
-		result = append(result, &InviteResponse{
-			ID:        inv.ID,
-			BoardID:   inv.BoardID,
-			BoardName: inv.Board.Name,
-			InviterID: inv.InviterID,
-			InviteeID: inv.InviteeID,
-			Status:    inv.Status,
-			CreatedAt: inv.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		})
+		result = append(result, toInviteResponse(inv))
 	}
 
 	return result, nil
 }
 
+func toInviteResponse(inv *models.Invite) *InviteResponse {
+	return &InviteResponse{
+		ID:        inv.ID,
+		BoardID:   inv.BoardID,
+		BoardName: inv.Board.Name,
+		InviterID: inv.InviterID,
+		InviteeID: inv.InviteeID,
+		Status:    inv.Status,
+		CreatedAt: inv.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+	}
+}
+
 // Accept accepts a pending invitation and adds the user to the board.
-func (s *Service) Accept(inviteID uint, userID int64) error {
+// Returns the boardID so the caller can broadcast member_added to that board room.
+func (s *Service) Accept(inviteID uint, userID int64) (uint, error) {
 	inv, err := s.repo.GetByID(inviteID)
 	if err != nil {
-		return errors.New("invitation not found")
+		return 0, errors.New("invitation not found")
 	}
 	if inv.InviteeID != userID {
-		return errors.New("access denied")
+		return 0, errors.New("access denied")
 	}
 	if inv.Status != models.InviteStatusPending {
-		return errors.New("invitation is no longer pending")
+		return 0, errors.New("invitation is no longer pending")
 	}
 
 	if err := s.repo.UpdateStatus(inviteID, models.InviteStatusAccepted); err != nil {
-		return err
+		return 0, err
 	}
 
-	return s.repo.AddMember(inv.BoardID, userID)
+	return inv.BoardID, s.repo.AddMember(inv.BoardID, userID)
 }
 
 // Reject declines a pending invitation.

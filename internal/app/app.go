@@ -82,7 +82,7 @@ func New() *App {
 	employeeHandler := employee.NewModule(db)
 	boardHandler := board.NewModule(db, boardHub)
 	taskHandler := task.NewModule(db, boardHub)
-	inviteHandler := invite.NewModule(db)
+	inviteHandler := invite.NewModule(db, boardHub)
 	uploadHandler := upload.NewHandler()
 	commentHandler := comment.NewModule(db)
 	attachmentHandler := attachment.NewModule(db)
