@@ -175,7 +175,7 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
-                    "401": {
+                    "422": {
                         "description": "invalid credentials",
                         "schema": {
                             "type": "string"
@@ -987,6 +987,68 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update board name and/or description; caller must be the board owner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Update board",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/board.UpdateBoardRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "board not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/boards/{id}/events": {
@@ -1013,6 +1075,55 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {}
+            }
+        },
+        "/boards/{id}/member-stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns per-member activity counts scoped to this board: hard tasks completed, total tasks completed, polls created, messages sent.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Board"
+                ],
+                "summary": "Get board member stats",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Board ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/board.MemberStatsResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid board id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/boards/{id}/members": {
@@ -1466,6 +1577,55 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/employee.ActivitiesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/employees/{id}/achievements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the unlocked level for all 19 achievements for the given employee. Level 0 = locked, 1/2/3 = bronze/silver/gold, 4 = prestige.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Employee"
+                ],
+                "summary": "Get employee achievement progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/employee.AchievementResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid id",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -2352,6 +2512,25 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/ws": {
+            "get": {
+                "description": "Connect via WS. Pass JWT as ?token=... query param.\nReceives events: invite_received.",
+                "tags": [
+                    "Invite"
+                ],
+                "summary": "WebSocket endpoint for real-time user events (invitations)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -2533,6 +2712,26 @@ const docTemplate = `{
                 }
             }
         },
+        "board.MemberStatsResponse": {
+            "type": "object",
+            "properties": {
+                "completed_tasks": {
+                    "type": "integer"
+                },
+                "hard_tasks": {
+                    "type": "integer"
+                },
+                "messages_sent": {
+                    "type": "integer"
+                },
+                "polls_created": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "board.ReorderStatusesRequest": {
             "type": "object",
             "required": [
@@ -2587,6 +2786,20 @@ const docTemplate = `{
                 },
                 "status_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "board.UpdateBoardRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
                 }
             }
         },
@@ -2786,6 +2999,17 @@ const docTemplate = `{
                 "content": {
                     "type": "string",
                     "minLength": 1
+                }
+            }
+        },
+        "employee.AchievementResponse": {
+            "type": "object",
+            "properties": {
+                "achievement_code": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "integer"
                 }
             }
         },
