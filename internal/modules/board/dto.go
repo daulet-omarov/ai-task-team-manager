@@ -57,3 +57,11 @@ type StatusPosition struct {
 	BoardStatusID uint `json:"board_status_id" validate:"required"`
 	Position      int  `json:"position"        validate:"required"`
 }
+
+type MemberStatsResponse struct {
+	UserID         int64 `json:"user_id"`
+	HardTasks      int64 `json:"hard_tasks"`
+	CompletedTasks int64 `json:"completed_tasks"`
+	PollsCreated   int64 `json:"polls_created"`
+	MessagesSent   int64 `json:"messages_sent"`
+}

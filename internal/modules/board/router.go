@@ -16,6 +16,7 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Get("/boards/{id}", h.GetByID)
 		r.Delete("/boards/{id}", h.Delete)
 		r.Get("/boards/{id}/members", h.GetMembers)
+		r.Get("/boards/{id}/member-stats", h.GetMemberStats)
 		r.Delete("/board-members/{boardMemberId}", h.DeleteMember)
 		r.Get("/boards/{id}/statuses", h.GetStatuses)
 		r.Post("/statuses", h.CreateStatus)

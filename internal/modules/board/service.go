@@ -197,6 +197,14 @@ func titleToCode(title string) string {
 	return nonAlphanumRe.ReplaceAllString(lower, "_")
 }
 
+func (s *Service) GetMemberStats(boardID uint, userID int64) ([]*MemberStatsResponse, error) {
+	isMember, err := s.repo.IsMember(boardID, userID)
+	if err != nil || !isMember {
+		return nil, errors.New("access denied")
+	}
+	return s.repo.GetMemberStats(boardID)
+}
+
 func (s *Service) GetByID(boardID uint, userID int64) (*BoardResponse, error) {
 	b, err := s.repo.GetByID(boardID)
 	if err != nil {

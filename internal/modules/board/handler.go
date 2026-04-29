@@ -435,6 +435,39 @@ func (h *Handler) DeleteMember(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetMemberStats godoc
+// @Summary Get board member stats
+// @Description Returns per-member activity counts scoped to this board: hard tasks completed, total tasks completed, polls created, messages sent.
+// @Tags Board
+// @Security BearerAuth
+// @Produce json
+// @Param id path int true "Board ID"
+// @Success 200 {array} MemberStatsResponse
+// @Failure 403 {string} string "access denied"
+// @Failure 400 {string} string "invalid board id"
+// @Router /boards/{id}/member-stats [get]
+func (h *Handler) GetMemberStats(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "invalid board id")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	stats, err := h.service.GetMemberStats(uint(id), userID)
+	if err != nil {
+		if err.Error() == "access denied" {
+			response.Error(w, http.StatusForbidden, err.Error())
+			return
+		}
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.JSON(w, http.StatusOK, stats)
+}
+
 // ServeWS godoc
 // @Summary WebSocket endpoint for real-time board events
 // @Description Connect via WS. Pass JWT as ?token=... query param.
