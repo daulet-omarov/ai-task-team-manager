@@ -24,6 +24,7 @@ type UpdateTaskRequest struct {
 	AssigneeID   uint   `json:"assignee_id"` // employee ID
 	TesterID     uint   `json:"tester_id"`   // employee ID
 	TimeSpent    uint   `json:"time_spent"`
+	DueDate      string `json:"due_date"` // RFC3339; empty means no change
 }
 
 type EmployeeInfo struct {
@@ -64,6 +65,7 @@ type TaskResponse struct {
 	ReporterID   uint             `json:"reporter_id"`
 	Reporter     *EmployeeInfo    `json:"reporter"`
 	TimeSpent    uint             `json:"time_spent"`
+	DueDate      *string          `json:"due_date,omitempty"`
 	Attachments  []AttachmentInfo `json:"attachments"`
 	Comments     []CommentInfo    `json:"comments"`
 	CreatedAt    string           `json:"created_at"`

@@ -13,6 +13,14 @@ import (
 type boardMemberChecker interface {
 	IsMember(boardID uint, userID int64) (bool, error)
 	GetDefaultStatusIDForBoard(boardID uint) (uint, error)
+	GetBoardStatusFlags(boardID uint, statusID uint) (isCompleted, isReopen bool, err error)
+}
+
+// gamificationNotifier is satisfied by gamification.Service.
+// Defined here as an interface to avoid an import cycle.
+type gamificationNotifier interface {
+	OnTaskCompleted(developerUserID int64, task *models.Task) error
+	OnTaskReopened(developerUserID int64, task *models.Task) error
 }
 
 type attachmentSaver interface {
@@ -43,10 +51,16 @@ type Service struct {
 	attachmentRepo  attachmentSaver
 	attachmentFetch attachmentFetcher
 	commentFetch    commentFetcher
+	gamification    gamificationNotifier // optional; nil disables gamification hooks
 }
 
 func NewService(repo *Repository, boardRepo boardMemberChecker, attachmentRepo attachmentSaver, attachmentFetch attachmentFetcher, commentFetch commentFetcher) *Service {
 	return &Service{repo: repo, boardRepo: boardRepo, attachmentRepo: attachmentRepo, attachmentFetch: attachmentFetch, commentFetch: commentFetch}
+}
+
+func (s *Service) WithGamification(g gamificationNotifier) *Service {
+	s.gamification = g
+	return s
 }
 
 func (s *Service) Create(boardID uint, reporterUserID int64, req CreateTaskRequest, r *http.Request) (*TaskResponse, error) {
@@ -153,6 +167,8 @@ func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.R
 		return nil, errors.New("access denied")
 	}
 
+	oldStatusID := t.StatusID
+
 	updates := map[string]interface{}{}
 	if req.Title != "" {
 		updates["title"] = req.Title
@@ -178,6 +194,12 @@ func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.R
 	if req.TimeSpent != 0 {
 		updates["time_spent"] = req.TimeSpent
 	}
+	if req.DueDate != "" {
+		parsed, err := time.Parse(time.RFC3339, req.DueDate)
+		if err == nil {
+			updates["due_date"] = parsed
+		}
+	}
 
 	if err := s.repo.Update(t.ID, updates); err != nil {
 		return nil, err
@@ -187,6 +209,20 @@ func (s *Service) Update(id uint, userID int64, req UpdateTaskRequest, r *http.R
 	t, err = s.repo.GetByID(t.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Fire gamification hooks when the status actually changed.
+	if s.gamification != nil && req.StatusID != 0 && req.StatusID != oldStatusID {
+		isCompleted, isReopen, flagErr := s.boardRepo.GetBoardStatusFlags(t.BoardID, req.StatusID)
+		if flagErr == nil {
+			developerUserID := int64(t.DeveloperID)
+			switch {
+			case isCompleted:
+				_ = s.gamification.OnTaskCompleted(developerUserID, t)
+			case isReopen:
+				_ = s.gamification.OnTaskReopened(developerUserID, t)
+			}
+		}
 	}
 
 	resp := toResponse(t)
@@ -264,7 +300,7 @@ func employeeInfo(e models.Employee) *EmployeeInfo {
 }
 
 func toResponse(t *models.Task) *TaskResponse {
-	return &TaskResponse{
+	resp := &TaskResponse{
 		ID:           t.ID,
 		BoardID:      t.BoardID,
 		Title:        t.Title,
@@ -284,4 +320,9 @@ func toResponse(t *models.Task) *TaskResponse {
 		CreatedAt:    t.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:    t.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
+	if t.DueDate != nil {
+		s := t.DueDate.Format("2006-01-02T15:04:05Z07:00")
+		resp.DueDate = &s
+	}
+	return resp
 }

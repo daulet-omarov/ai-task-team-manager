@@ -259,6 +259,22 @@ func (r *Repository) Delete(boardID uint) error {
 	return r.db.Delete(&models.Board{}, boardID).Error
 }
 
+// GetBoardStatusFlags returns the is_completed and is_reopen flags for a given
+// status within a board. Both flags are false when the row is not found.
+func (r *Repository) GetBoardStatusFlags(boardID uint, statusID uint) (isCompleted, isReopen bool, err error) {
+	var row struct {
+		IsCompleted bool
+		IsReopen    bool
+	}
+	err = r.db.Raw(`
+		SELECT is_completed, is_reopen
+		FROM board_statuses
+		WHERE board_id = ? AND status_id = ?
+		LIMIT 1
+	`, boardID, statusID).Scan(&row).Error
+	return row.IsCompleted, row.IsReopen, err
+}
+
 // IsOwner reports whether userID is the owner of boardID.
 func (r *Repository) IsOwner(boardID uint, userID int64) (bool, error) {
 	var count int64

@@ -4,6 +4,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/hub"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/models"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/board"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/gamification"
 	"gorm.io/gorm"
 )
 
@@ -48,6 +49,7 @@ func NewModule(db *gorm.DB, h *hub.Hub) *Handler {
 	boardRepo := board.NewRepository(db)
 	attachRepo := &localAttachmentRepo{db}
 	commentRepo := &localCommentRepo{db}
-	service := NewService(repo, boardRepo, attachRepo, attachRepo, commentRepo)
+	gamificationSvc := gamification.NewServiceFromDB(db)
+	service := NewService(repo, boardRepo, attachRepo, attachRepo, commentRepo).WithGamification(gamificationSvc)
 	return NewHandler(service, h)
 }
