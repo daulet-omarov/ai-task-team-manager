@@ -15,6 +15,8 @@ type UserGamification struct {
 	UpdatedAt      time.Time
 }
 
+func (UserGamification) TableName() string { return "user_gamification" }
+
 type PointTransaction struct {
 	ID       uint            `gorm:"primaryKey"`
 	UserID   int64           `gorm:"not null"`
