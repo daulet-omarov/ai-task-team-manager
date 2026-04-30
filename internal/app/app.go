@@ -15,6 +15,7 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/chat"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/comment"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/employee"
+	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/gamification"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/invite"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/notion"
 	"github.com/daulet-omarov/ai-task-team-manager/internal/modules/task"
@@ -88,9 +89,10 @@ func New() *App {
 	attachmentHandler := attachment.NewModule(db)
 	notionHandler := notion.NewModule(db)
 	chatHandler := chat.NewModule(db, boardHub)
+	gamificationHandler := gamification.NewModule(db)
 
 	// router
-	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler, cfg.AllowedOrigins)
+	r := router.SetupRouter(authHandler, employeeHandler, boardHandler, taskHandler, inviteHandler, uploadHandler, commentHandler, attachmentHandler, notionHandler, chatHandler, gamificationHandler, cfg.AllowedOrigins)
 
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

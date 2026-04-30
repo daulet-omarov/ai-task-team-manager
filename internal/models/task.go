@@ -12,8 +12,9 @@ type Task struct {
 	DeveloperID  uint
 	TesterID     uint
 	ReporterID   uint
-	Description  string `gorm:"type:text"`
+	Description  string     `gorm:"type:text"`
 	TimeSpent    uint
+	DueDate      *time.Time `gorm:"type:timestamp"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	Status       Status
