@@ -110,8 +110,8 @@ func (r *Repository) InsertKudos(k *models.Kudos) error {
 	return r.db.Create(k).Error
 }
 
-// GetLeaderboard returns top `limit` users by rolling 30-day points.
-func (r *Repository) GetLeaderboard(limit int) ([]leaderboardRow, error) {
+// GetLeaderboard returns top `limit` users by rolling 30-day points scoped to a board.
+func (r *Repository) GetLeaderboard(limit int, boardID uint) ([]leaderboardRow, error) {
 	cutoff := time.Now().UTC().Add(-30 * 24 * time.Hour)
 	var rows []leaderboardRow
 	err := r.db.Raw(`
@@ -126,12 +126,12 @@ func (r *Repository) GetLeaderboard(limit int) ([]leaderboardRow, error) {
 		FROM point_transactions pt
 		LEFT JOIN employees e  ON e.id = pt.user_id
 		LEFT JOIN user_gamification ug ON ug.user_id = pt.user_id
-		WHERE pt.earned_at >= ?
+		WHERE pt.earned_at >= ? AND pt.board_id = ?
 		GROUP BY pt.user_id, e.full_name, e.photo,
 		         ug.total_points, ug.current_level, ug.current_streak
 		ORDER BY rolling_points DESC
 		LIMIT ?
-	`, cutoff, limit).Scan(&rows).Error
+	`, cutoff, boardID, limit).Scan(&rows).Error
 	return rows, err
 }
 
@@ -147,14 +147,35 @@ func (r *Repository) GetRolling30dPoints(userID int64) (int, error) {
 	return total, err
 }
 
-// GetPointsHistory returns the most recent `limit` transactions for userID.
-func (r *Repository) GetPointsHistory(userID int64, limit int) ([]models.PointTransaction, error) {
+// GetPointsHistory returns the most recent `limit` transactions for userID scoped to a board.
+func (r *Repository) GetPointsHistory(userID int64, limit int, boardID uint) ([]models.PointTransaction, error) {
 	var pts []models.PointTransaction
-	err := r.db.Where("user_id = ?", userID).
+	err := r.db.Where("user_id = ? AND board_id = ?", userID, boardID).
 		Order("earned_at DESC").
 		Limit(limit).
 		Find(&pts).Error
 	return pts, err
+}
+
+// GetReceivedKudos returns kudos sent to toUserID, newest first, up to limit.
+func (r *Repository) GetReceivedKudos(toUserID int64, limit int) ([]receivedKudosRow, error) {
+	var rows []receivedKudosRow
+	err := r.db.Raw(`
+		SELECT
+			k.id,
+			k.from_user_id,
+			COALESCE(e.full_name, '') AS from_name,
+			COALESCE(e.photo, '')     AS from_photo,
+			k.task_id,
+			k.message,
+			k.created_at
+		FROM kudos k
+		LEFT JOIN employees e ON e.id = k.from_user_id
+		WHERE k.to_user_id = ?
+		ORDER BY k.created_at DESC
+		LIMIT ?
+	`, toUserID, limit).Scan(&rows).Error
+	return rows, err
 }
 
 // GetDifficultyCode returns the code string for a difficulty ID.

@@ -107,3 +107,23 @@ type KudosStatusResponse struct {
 	GivenThisWeek int `json:"given_this_week"`
 	MaxPerWeek    int `json:"max_per_week"`
 }
+
+type receivedKudosRow struct {
+	ID         uint      `gorm:"column:id"`
+	FromUserID int64     `gorm:"column:from_user_id"`
+	FromName   string    `gorm:"column:from_name"`
+	FromPhoto  string    `gorm:"column:from_photo"`
+	TaskID     *uint     `gorm:"column:task_id"`
+	Message    string    `gorm:"column:message"`
+	CreatedAt  time.Time `gorm:"column:created_at"`
+}
+
+type ReceivedKudosResponse struct {
+	ID         uint      `json:"id"`
+	FromUserID int64     `json:"from_user_id"`
+	FromName   string    `json:"from_name"`
+	FromPhoto  string    `json:"from_photo"`
+	TaskID     *uint     `json:"task_id"`
+	Message    string    `json:"message"`
+	CreatedAt  time.Time `json:"created_at"`
+}

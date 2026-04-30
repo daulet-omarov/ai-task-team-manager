@@ -21,6 +21,7 @@ type PointTransaction struct {
 	ID       uint            `gorm:"primaryKey"`
 	UserID   int64           `gorm:"not null"`
 	TaskID   *uint           `gorm:"index"`
+	BoardID  *uint           `gorm:"index"`
 	Points   int             `gorm:"not null"`
 	Reason   string          `gorm:"not null;size:50"`
 	EarnedAt time.Time       `gorm:"not null"`

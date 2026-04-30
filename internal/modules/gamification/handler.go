@@ -9,6 +9,11 @@ import (
 	"github.com/daulet-omarov/ai-task-team-manager/internal/response"
 )
 
+func parseBoardID(r *http.Request) uint {
+	v, _ := strconv.ParseUint(r.URL.Query().Get("board_id"), 10, 64)
+	return uint(v)
+}
+
 type Handler struct {
 	service *Service
 }
@@ -26,7 +31,8 @@ func NewHandler(service *Service) *Handler {
 // @Success 200 {array} LeaderboardEntry
 // @Router /leaderboard [get]
 func (h *Handler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-	entries, err := h.service.GetLeaderboard(50)
+	boardID := parseBoardID(r)
+	entries, err := h.service.GetLeaderboard(50, boardID)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -83,7 +89,8 @@ func (h *Handler) GetUserStats(w http.ResponseWriter, r *http.Request) {
 // @Router /gamification/history [get]
 func (h *Handler) GetPointsHistory(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	history, err := h.service.GetPointsHistory(userID, 50)
+	boardID := parseBoardID(r)
+	history, err := h.service.GetPointsHistory(userID, 50, boardID)
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err.Error())
 		return
@@ -106,6 +113,23 @@ func (h *Handler) GetKudosStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response.JSON(w, http.StatusOK, status)
+}
+
+// GetMyKudos godoc
+// @Summary Kudos received by the current user
+// @Tags Gamification
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} ReceivedKudosResponse
+// @Router /gamification/kudos/received [get]
+func (h *Handler) GetMyKudos(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	kudos, err := h.service.GetReceivedKudos(userID, 50)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.JSON(w, http.StatusOK, kudos)
 }
 
 // GiveKudos godoc

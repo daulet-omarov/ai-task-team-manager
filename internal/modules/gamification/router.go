@@ -14,6 +14,7 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 		r.Get("/gamification/users/{userId}", h.GetUserStats)
 		r.Get("/gamification/history", h.GetPointsHistory)
 		r.Get("/gamification/kudos/status", h.GetKudosStatus)
+		r.Get("/gamification/kudos/received", h.GetMyKudos)
 		r.Post("/kudos", h.GiveKudos)
 	})
 }

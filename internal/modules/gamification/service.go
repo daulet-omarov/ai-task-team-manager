@@ -121,6 +121,8 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 	// 5. Quality bonus: awarded immediately; reversed on reopen.
 	qualityPts := 3
 
+	boardID := task.BoardID
+
 	// 6. Run all inserts + user_gamification update atomically.
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		taskID := task.ID
@@ -129,6 +131,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 			if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 				UserID:   developerUserID,
 				TaskID:   &taskID,
+				BoardID:  &boardID,
 				Points:   pts,
 				Reason:   ReasonTaskCompleted,
 				EarnedAt: now,
@@ -143,6 +146,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 				if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 					UserID:   developerUserID,
 					TaskID:   &taskID,
+					BoardID:  &boardID,
 					Points:   pts,
 					Reason:   ReasonOnTimeBonus,
 					EarnedAt: now,
@@ -157,6 +161,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 				if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 					UserID:   developerUserID,
 					TaskID:   &taskID,
+					BoardID:  &boardID,
 					Points:   pts,
 					Reason:   ReasonQualityBonus,
 					EarnedAt: now,
@@ -176,6 +181,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 				if pts := bgt.take(5); pts > 0 {
 					if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 						UserID:   developerUserID,
+						BoardID:  &boardID,
 						Points:   pts,
 						Reason:   ReasonComboBonus,
 						EarnedAt: now,
@@ -212,6 +218,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 				if pts := bgt.take(2); pts > 0 {
 					if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 						UserID:   developerUserID,
+						BoardID:  &boardID,
 						Points:   pts,
 						Reason:   ReasonStreakBonus,
 						EarnedAt: now,
@@ -227,6 +234,7 @@ func (s *Service) OnTaskCompleted(developerUserID int64, task *models.Task) erro
 				if pts := bgt.take(10); pts > 0 {
 					if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 						UserID:   developerUserID,
+						BoardID:  &boardID,
 						Points:   pts,
 						Reason:   ReasonStreakMilestone,
 						EarnedAt: now,
@@ -290,10 +298,12 @@ func (s *Service) OnTaskReopened(developerUserID int64, task *models.Task) error
 		return nil // already fully reversed
 	}
 
+	boardID := task.BoardID
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		if err := s.repo.InsertTransaction(tx, &models.PointTransaction{
 			UserID:   developerUserID,
 			TaskID:   &taskID,
+			BoardID:  &boardID,
 			Points:   -netToReverse,
 			Reason:   ReasonReworkPenalty,
 			EarnedAt: now,
@@ -395,8 +405,8 @@ func (s *Service) GiveKudos(fromUserID, toUserID int64, taskID *uint, message st
 
 // ─── Leaderboard / stats ──────────────────────────────────────────────────────
 
-func (s *Service) GetLeaderboard(limit int) ([]LeaderboardEntry, error) {
-	rows, err := s.repo.GetLeaderboard(limit)
+func (s *Service) GetLeaderboard(limit int, boardID uint) ([]LeaderboardEntry, error) {
+	rows, err := s.repo.GetLeaderboard(limit, boardID)
 	if err != nil {
 		return nil, err
 	}
@@ -447,11 +457,11 @@ func (s *Service) GetUserStats(userID int64) (*UserStatsResponse, error) {
 	}, nil
 }
 
-func (s *Service) GetPointsHistory(userID int64, limit int) ([]PointTransactionResponse, error) {
+func (s *Service) GetPointsHistory(userID int64, limit int, boardID uint) ([]PointTransactionResponse, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 50
 	}
-	pts, err := s.repo.GetPointsHistory(userID, limit)
+	pts, err := s.repo.GetPointsHistory(userID, limit, boardID)
 	if err != nil {
 		return nil, err
 	}
@@ -477,6 +487,26 @@ func (s *Service) GetKudosStatus(fromUserID int64) (*KudosStatusResponse, error)
 		GivenThisWeek: int(given),
 		MaxPerWeek:    MaxKudosPerWeek,
 	}, nil
+}
+
+func (s *Service) GetReceivedKudos(toUserID int64, limit int) ([]ReceivedKudosResponse, error) {
+	rows, err := s.repo.GetReceivedKudos(toUserID, limit)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ReceivedKudosResponse, len(rows))
+	for i, r := range rows {
+		out[i] = ReceivedKudosResponse{
+			ID:         r.ID,
+			FromUserID: r.FromUserID,
+			FromName:   r.FromName,
+			FromPhoto:  r.FromPhoto,
+			TaskID:     r.TaskID,
+			Message:    r.Message,
+			CreatedAt:  r.CreatedAt,
+		}
+	}
+	return out, nil
 }
 
 func levelName(level int) string {
